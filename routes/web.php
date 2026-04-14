@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use Inertia\Inertia;
+use App\Http\Middleware\RoleMiddleware;
+
+Route::get('/', function () {
+    return redirect('/login');
+});
+
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login']);
+});
+
+Route::middleware('auth')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    Route::get('/dashboard', function () {
+        return Inertia::render('Dashboard');
+    })->middleware(RoleMiddleware::class . ':owner')->name('dashboard');
+
+    Route::get('/master/products', function () {
+        return Inertia::render('Placeholder', ['title' => 'Master Products']);
+    })->middleware(RoleMiddleware::class . ':owner,stockist')->name('master.products');
+
+    Route::get('/pos/offline', function () {
+        return Inertia::render('Placeholder', ['title' => 'POS Offline']);
+    })->middleware(RoleMiddleware::class . ':kasir')->name('pos.offline');
+
+    Route::get('/pos/online', function () {
+        return Inertia::render('Placeholder', ['title' => 'POS Online']);
+    })->middleware(RoleMiddleware::class . ':admin')->name('pos.online');
+
+});
