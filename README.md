@@ -47,20 +47,24 @@ Sistem dibangun menggunakan arsitektur monolit modern dengan implementasi **Serv
 
 ## 🚀 Instalasi & Setup (Development)
 
-1. **Clone Repository**
+Proses instalasi dibagi ke dalam beberapa langkah sederhana. Pastikan Anda memiliki PHP 8.2+, Node.js (v18+), Composer, MySQL, dan Redis di perangkat Anda.
+
+1. **Clone Repository & Akses Folder**
    ```bash
    git clone <repository_url>
    cd ProjectPWII
    ```
-2. **Install Dependensi Backend**
+2. **Setup Lingkungan Backend (Laravel)**
+   Salin file konfigurasi lingkungan dan pasang dependensi backend:
    ```bash
-   composer install
    cp .env.example .env
+   composer install
    php artisan key:generate
    ```
-3. **Konfigurasi Environment**
-   Ubah file `.env` untuk menghubungkan ke MySQL dan Redis (sesuaikan dengan kredensial environment lokal Anda).
+3. **Konfigurasi Environment Database & Email (OTP, Notifikasi)**
+   Buka file `.env` yang baru saja dibuat. Hubungkan ke MySQL, Redis, dan SMTP Gmail (Wajib untuk fitur Forgot Password OTP):
    ```dotenv
+   # Database
    DB_CONNECTION=mysql
    DB_HOST=127.0.0.1
    DB_PORT=3306
@@ -68,25 +72,48 @@ Sistem dibangun menggunakan arsitektur monolit modern dengan implementasi **Serv
    DB_USERNAME=root
    DB_PASSWORD=
 
-   # REDIS_HOST=127.0.0.1
+   # Queue & Session
+   QUEUE_CONNECTION=sync # Ubah ke 'redis' untuk production
+   SESSION_DRIVER=database # atau 'redis'
+
+   # SMTP Configuration (Wajib untuk OTP & Notifikasi Sistem)
+   MAIL_MAILER=smtp
+   MAIL_HOST=smtp.gmail.com
+   MAIL_PORT=465
+   MAIL_USERNAME="<alamat-email-gmail-anda>"
+   MAIL_PASSWORD="<app-password-gmail-anda>"
+   MAIL_ENCRYPTION=tls
+   MAIL_FROM_ADDRESS="<alamat-email-gmail-anda>"
+   MAIL_FROM_NAME="FruityPOS System"
    ```
-4. **Jalankan Migrasi & Seeder**
+   > **Catatan:** Untuk `MAIL_PASSWORD`, pastikan Anda menggunakan **App Password** dari rincian keamanan Akun Google Anda jika fitur *2-Step Verification* aktif.
+
+4. **Jalankan Migrasi Database & Seeder Data Awal**
+   Proses ini akan membentuk tabel-tabel penting beserta Role, Toko Dummy, dan Akun Owner utama aplikasi.
    ```bash
-   php artisan migrate --seed
+   php artisan migrate:fresh --seed
    ```
-5. **Install Dependensi Frontend**
+5. **Konfigurasi Penyimpanan (Storage)**
+   Tautkan folder penyimpanan publik agar aset-aset produk gambar dapat diakses:
+   ```bash
+   php artisan storage:link
+   ```
+6. **Install Dependensi Frontend (React + Vite)**
    ```bash
    npm install
    ```
-6. **Jalankan Aplikasi Server**
-   Buka terminal pertama:
-   ```bash
-   php artisan serve
-   ```
-   Buka terminal kedua untuk *hot-module replacement* Vite:
-   ```bash
-   npm run dev
-   ```
+7. **Jalankan Aplikasi Development Server**
+   Anda membutuhkan dua jendela antarmuka perintah (terminal) secara bersamaan.
+   - Terminal 1 (Servis Backend PHP):
+     ```bash
+     php artisan serve
+     ```
+   - Terminal 2 (Proses HMR Frontend Vite):
+     ```bash
+     npm run dev
+     # (Jika Vite error mengenai path import `@/*`, pastikan terminal berada di root ProjectPWII)
+     ```
+   Aplikasi secara default dapat diakses melalui browser pada `http://localhost:8000`.
 
 ---
 *Dokumen ini dikembangkan & diturunkan dari Spesifikasi Kebutuhan Perangkat Lunak (SRS) FruityPOS v2.0 Final Blueprint.*
