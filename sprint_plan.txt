@@ -1,0 +1,1685 @@
+
+SPRINT IMPLEMENTATION PLAN
+FruityPOS
+Pembagian Task Backend & Frontend per Sprint
+
+
+Berdasarkan SRS v1.0 + v1.1 + v1.2
+Total: 10 Sprint  |  10 Minggu  |  ~180 Task
+
+Disusun oleh: Tim Sistem Analis
+Tanggal: April 2026
+
+Overview Sprint Plan
+Prinsip Pembagian Sprint
+a) Dependency-first: modul fondasi (auth, master data, lokasi) dikerjakan terlebih dahulu.
+b) Backend (BE) mendahului Frontend (FE) sebesar 0.5–1 sprint agar FE bisa langsung integrasi.
+c) Setiap sprint menghasilkan deliverable yang bisa di-demo/review.
+d) Task dipecah sekecil mungkin (estimasi 2–8 jam per task) agar mudah dimonitoring.
+e) Estimasi menggunakan satuan jam (h) untuk granularitas.
+Legenda
+BE = Backend (Laravel)     — warna biru
+FE = Frontend (React)      — warna ungu
+QA = Testing               — warna hijau
+Est = Estimasi jam kerja per task
+Sprint Timeline
+Sprint
+Minggu
+Fokus Utama
+Deliverable
+S1
+Minggu 1
+Project setup + Login/Auth
+Bisa login 4 role
+S2
+Minggu 2
+Manajemen Toko + User + RBAC
+CRUD toko, CRUD user, role-based access
+S3
+Minggu 3
+Data Master + Supplier
+CRUD produk, kategori, UoM, supplier
+S4
+Minggu 4
+Purchase Order + Inbound + WAC
+PO workflow, inbound, HPP/WAC calculation
+S5
+Minggu 5
+Pricing Engine
+Set margin, lock harga, multi-tier, hpp_baseline
+S6
+Minggu 6
+POS Offline + Shift
+POS fungsional, shift, safeguard, diskon
+S7
+Minggu 7
+POS Online + Offline Sync
+POS Online, Dexie.js, service worker, sync
+S8
+Minggu 8
+Mutasi + Waste + Opname
+Mutasi antar-toko, waste approval, stock opname
+S9
+Minggu 9
+Dashboard + Laporan + Reorder Point
+KPI, laba-rugi, alerts, reorder point
+S10
+Minggu 10
+Integration Testing + Polish + Deploy
+UAT, bug fix, deploy production
+
+Sprint 1 — Project Setup + Authentication
+Minggu 1  |  Deliverable: Halaman login fungsional, 4 role bisa login, layout dasar terpasang.
+
+Backend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S1-B01
+Install Laravel 11 fresh project, konfigurasi .env
+BE
+2h
+Setup
+S1-B02
+Setup MySQL 8 database, konfigurasi koneksi
+BE
+1h
+Setup
+S1-B03
+Setup Redis untuk cache & session
+BE
+1h
+Setup
+S1-B04
+Install & konfigurasi Inertia.js server-side adapter
+BE
+2h
+Setup
+S1-B05
+Install Laravel Sanctum, konfigurasi auth guard
+BE
+2h
+Setup
+S1-B06
+Buat migration: tabel users (sesuai SRS v1.0 Bab 5)
+BE
+2h
+Tabel users
+S1-B07
+Buat migration: tabel locations (sesuai SRS v1.1 Bab 4.1)
+BE
+1h
+Tabel locations
+S1-B08
+Buat Model: User (dengan relasi belongsTo Location)
+BE
+2h
+Model
+S1-B09
+Buat Model: Location
+BE
+1h
+Model
+S1-B10
+Buat Enum: Role (owner, stockist, kasir, admin)
+BE
+1h
+App\Enums\Role
+S1-B11
+Buat Middleware: RoleMiddleware (cek user role)
+BE
+2h
+RBAC
+S1-B12
+Buat Middleware: LocationScope (auto-filter per toko)
+BE
+3h
+SRS v1.1 Bab 3.2
+S1-B13
+Buat AuthController: showLogin, login, logout
+BE
+3h
+FR Auth
+S1-B14
+Buat LoginRequest (Form Request validation)
+BE
+1h
+Validation
+S1-B15
+Konfigurasi route: GET/POST /login, POST /logout
+BE
+1h
+routes/web.php
+S1-B16
+Buat DatabaseSeeder: 1 Owner + 1 Location dummy
+BE
+1h
+Seeder
+S1-B17
+Setup session timeout 30 menit di config/session.php
+BE
+0.5h
+NFR-05
+S1-B18
+Setup CSRF protection verification
+BE
+0.5h
+NFR-07
+
+Frontend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S1-F01
+Install React 18 + Inertia.js client adapter via Vite
+FE
+2h
+Setup
+S1-F02
+Install & konfigurasi Tailwind CSS 3
+FE
+1h
+Setup
+S1-F03
+Buat GuestLayout.jsx (layout untuk halaman login/public)
+FE
+2h
+Layout
+S1-F04
+Buat AppLayout.jsx (layout utama dengan sidebar + header)
+FE
+4h
+Layout
+S1-F05
+Buat komponen Sidebar.jsx (navigasi dinamis per role)
+FE
+3h
+Layout
+S1-F06
+Buat komponen Header.jsx (user info, logout button)
+FE
+2h
+Layout
+S1-F07
+Buat halaman Login.jsx (form username + password)
+FE
+3h
+Auth
+S1-F08
+Integrasi Login.jsx dengan Inertia form submit
+FE
+2h
+Auth
+S1-F09
+Handle error state: validasi gagal, credential salah
+FE
+1h
+Auth
+S1-F10
+Buat halaman placeholder Dashboard.jsx ("Selamat datang")
+FE
+1h
+Placeholder
+S1-F11
+Test manual: login dengan 4 role, pastikan redirect benar
+QA
+2h
+Auth
+S1-F12
+Test manual: sidebar menampilkan menu sesuai role
+QA
+1h
+RBAC
+
+Sprint 2 — Manajemen Toko + User + RBAC
+Minggu 2  |  Deliverable: Owner bisa CRUD toko, CRUD user, assign role & toko. RBAC aktif.
+
+Backend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S2-B01
+Buat migration: tambah kolom code, opened_at di locations
+BE
+1h
+SRS v1.1 Bab 4.1
+S2-B02
+Buat StoreService: create, update, toggle active, list with staff count
+BE
+4h
+FR-1101 s/d FR-1108
+S2-B03
+Buat StoreRepository (interface + Eloquent implementation)
+BE
+2h
+Repository
+S2-B04
+Buat StoreController: index, store, update, toggle
+BE
+3h
+Controller
+S2-B05
+Buat StoreRequest (validasi: code unique, max 10 char)
+BE
+1h
+FR-1102, FR-1108
+S2-B06
+Buat route group /stores (role:owner)
+BE
+1h
+SRS v1.2 Bab 6.1
+S2-B07
+Buat UserService: create, update, toggleActive, list per location
+BE
+4h
+FR-1001 s/d FR-1005
+S2-B08
+Buat UserRepository (interface + Eloquent)
+BE
+2h
+Repository
+S2-B09
+Buat UserController: index, store, update, toggle
+BE
+3h
+Controller
+S2-B10
+Buat UserRequest (validasi: username unique, role enum, location exists)
+BE
+2h
+Validation
+S2-B11
+Implementasi force password change on first login
+BE
+2h
+FR-1002
+S2-B12
+Validasi: setiap toko aktif harus punya min 1 Stockist, 1 Kasir, 1 Admin
+BE
+2h
+FR-1104
+S2-B13
+Buat migration: tabel activity_logs
+BE
+1h
+Tabel activity_logs
+S2-B14
+Buat AuditService: log login, create, update, delete, toggle
+BE
+3h
+FR-1004
+S2-B15
+Buat AuditRepository (interface + Eloquent)
+BE
+1h
+Repository
+S2-B16
+Seeder: 3 toko + 9 staff (3 per toko) + 1 Owner
+BE
+2h
+Seeder
+
+Frontend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S2-F01
+Buat halaman StoreIndex.jsx (list toko + badge jumlah staff)
+FE
+3h
+FR-1106
+S2-F02
+Buat komponen StoreForm.jsx (modal/drawer: nama, kode, alamat, telp)
+FE
+3h
+FR-1101
+S2-F03
+Buat toggle aktif/nonaktif toko dengan konfirmasi
+FE
+1h
+FR-1105
+S2-F04
+Buat warning badge jika toko belum punya staff lengkap
+FE
+2h
+FR-1104
+S2-F05
+Buat halaman UserIndex.jsx (list user, filter per toko, badge role)
+FE
+3h
+FR-1001
+S2-F06
+Buat komponen UserForm.jsx (nama, username, role dropdown, toko dropdown)
+FE
+3h
+FR-1001
+S2-F07
+Buat toggle aktif/nonaktif user
+FE
+1h
+FR-1003
+S2-F08
+Buat halaman ChangePassword.jsx (first login flow)
+FE
+2h
+FR-1002
+S2-F09
+Test: CRUD toko end-to-end, validasi kode unik
+QA
+2h
+
+S2-F10
+Test: CRUD user end-to-end, assign role & toko, RBAC enforcement
+QA
+2h
+
+
+Sprint 3 — Data Master + Supplier
+Minggu 3  |  Deliverable: CRUD produk buah, kategori, UoM konversi, supplier, weight safeguard.
+
+Backend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S3-B01
+Buat migration: tabel categories
+BE
+1h
+Tabel categories
+S3-B02
+Buat migration: tabel products
+BE
+1h
+Tabel products
+S3-B03
+Buat migration: tabel product_units
+BE
+1h
+Tabel product_units
+S3-B04
+Buat migration: tabel weight_safeguards
+BE
+1h
+Tabel weight_safeguards
+S3-B05
+Buat migration: tabel suppliers
+BE
+1h
+Tabel suppliers
+S3-B06
+Buat Model: Category, Product, ProductUnit, WeightSafeguard, Supplier + relasi
+BE
+3h
+Model
+S3-B07
+Buat CategoryService + CategoryRepository
+BE
+2h
+FR-107
+S3-B08
+Buat CategoryController: index, store, update, destroy
+BE
+2h
+Controller
+S3-B09
+Buat ProductService: create, update, toggle, validateUniqueName
+BE
+4h
+FR-101 s/d FR-106
+S3-B10
+Buat ProductRepository (interface + Eloquent)
+BE
+2h
+Repository
+S3-B11
+Buat ProductController: index, store, update, toggle
+BE
+3h
+Controller
+S3-B12
+Buat ProductUnitController: store, update, destroy (nested under product)
+BE
+2h
+FR-104
+S3-B13
+Implementasi validasi: soft-delete rule (buah dengan transaksi tidak bisa hapus)
+BE
+2h
+FR-106
+S3-B14
+Buat SupplierService + SupplierRepository + SupplierController
+BE
+3h
+CRUD Supplier
+S3-B15
+Buat WeightSafeguardController: store/update per product
+BE
+2h
+FR-405
+S3-B16
+Implementasi upload foto produk (Laravel Storage, max 2MB, JPG/PNG)
+BE
+2h
+FR-108
+S3-B17
+Route group: /master/products, /master/categories, /master/suppliers
+BE
+1h
+routes/web.php
+S3-B18
+Seeder: 10 produk, 3 kategori, 2 supplier, UoM konversi
+BE
+2h
+Seeder
+
+Frontend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S3-F01
+Buat halaman CategoryIndex.jsx (list + inline create/edit)
+FE
+2h
+FR-107
+S3-F02
+Buat halaman ProductIndex.jsx (list dengan filter kategori, badge aktif/nonaktif)
+FE
+4h
+FR-101
+S3-F03
+Buat komponen ProductForm.jsx (nama, SKU, kategori, base_uom, foto upload)
+FE
+4h
+FR-101, FR-108
+S3-F04
+Buat komponen ProductUnitManager.jsx (CRUD UoM konversi per produk)
+FE
+3h
+FR-104
+S3-F05
+Buat komponen WeightSafeguardForm.jsx (min/max gram per produk)
+FE
+2h
+FR-405
+S3-F06
+Buat halaman SupplierIndex.jsx + SupplierForm.jsx
+FE
+3h
+CRUD Supplier
+S3-F07
+Dialog konfirmasi saat ubah konversi UoM (dampak HPP)
+FE
+1h
+FR-105
+S3-F08
+Test: CRUD produk end-to-end, unique name, foto upload
+QA
+2h
+
+S3-F09
+Test: UoM konversi, safeguard weight, supplier CRUD
+QA
+2h
+
+
+Sprint 4 — Purchase Order + Inbound + WAC
+Minggu 4  |  Deliverable: PO workflow, inbound, kalkulasi HPP Mentah + WAC, notifikasi ke Owner.
+
+Backend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S4-B01
+Buat migration: tabel purchase_orders (incl location_id)
+BE
+1h
+SRS v1.1 Bab 4.2
+S4-B02
+Buat migration: tabel purchase_order_items
+BE
+1h
+Tabel
+S4-B03
+Buat migration: tabel inbounds (incl shipping_cost)
+BE
+1h
+SRS v1.2 Bab 4.1
+S4-B04
+Buat migration: tabel inbound_items
+BE
+1h
+Tabel
+S4-B05
+Buat migration: tabel inventories
+BE
+1h
+Tabel
+S4-B06
+Buat Model: PurchaseOrder, POItem, Inbound, InboundItem, Inventory + relasi
+BE
+3h
+Model
+S4-B07
+Buat PurchaseOrderService: create, update, confirm, cancel
+BE
+4h
+FR-201 s/d FR-203
+S4-B08
+Buat PurchaseOrderRepository (interface + Eloquent)
+BE
+2h
+Repository
+S4-B09
+Buat POController: index, store, update, confirm (LocationScope)
+BE
+3h
+FR-1109
+S4-B10
+Implementasi auto-generate PO number: PO-{STORE_CODE}-YYYYMMDD-XXXX
+BE
+2h
+FR-202, FR-1102
+S4-B11
+Buat InboundService: processReceipt (core method)
+BE
+6h
+FR-204 s/d FR-210
+S4-B12
+Implementasi kalkulasi HPP Mentah: total_buy_price / (qty x content)
+BE
+2h
+FR-205
+S4-B13
+Implementasi kalkulasi WAC: ((old_qty x old_avg) + (new_qty x new_hpp)) / total
+BE
+4h
+FR-206, FR-207
+S4-B14
+Buat InboundRepository + InventoryRepository
+BE
+2h
+Repository
+S4-B15
+Buat InboundController: index, store (LocationScope)
+BE
+2h
+FR-1110
+S4-B16
+Buat Event: InboundCreated
+BE
+1h
+Event
+S4-B17
+Buat Listener: RecalculateWAC (update inventories.avg_cost)
+BE
+2h
+Listener
+S4-B18
+Buat Listener: SendInboundNotification (ke Owner, incl toko + HPP + WAC)
+BE
+3h
+FR-210
+S4-B19
+Buat migration: tabel notifications (Laravel built-in)
+BE
+1h
+Tabel
+S4-B20
+Implementasi shipping_cost di inbound (terpisah dari HPP)
+BE
+1h
+FR-1216, FR-1217
+
+Frontend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S4-F01
+Buat halaman POIndex.jsx (list PO toko sendiri, filter status)
+FE
+3h
+FR-201
+S4-F02
+Buat komponen POForm.jsx (pilih supplier, tambah item dari katalog)
+FE
+4h
+FR-201
+S4-F03
+Buat flow confirm PO (button + konfirmasi)
+FE
+1h
+FR-203
+S4-F04
+Buat halaman InboundIndex.jsx (list inbound toko sendiri)
+FE
+2h
+
+S4-F05
+Buat komponen InboundForm.jsx (pilih PO, input qty/harga/isi, field ongkir)
+FE
+5h
+FR-204, FR-1216
+S4-F06
+Tampilkan kalkulasi HPP Mentah real-time saat input (preview)
+FE
+2h
+FR-205
+S4-F07
+Buat komponen NotificationDropdown.jsx (bell icon di header)
+FE
+3h
+Notifikasi
+S4-F08
+Test: PO workflow end-to-end, inbound, HPP + WAC calculation
+QA
+3h
+
+S4-F09
+Test: notifikasi ke Owner setelah inbound
+QA
+1h
+
+
+Sprint 5 — Pricing Engine
+Minggu 5  |  Deliverable: Owner bisa set margin, lihat HPP per toko, lock harga, multi-tier. Produk muncul di POS.
+
+Backend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S5-B01
+Buat migration: tabel product_prices (dengan hpp_baseline)
+BE
+1h
+SRS v1.1 Bab 4.3
+S5-B02
+Buat Model: ProductPrice + relasi
+BE
+1h
+Model
+S5-B03
+Buat PricingService: calculateBaseline (MAX avg_cost semua toko)
+BE
+4h
+FR-303, SRS v1.1 Bab 5
+S5-B04
+Buat PricingService: setMargin, roundHPP, calculateSellingPrice
+BE
+3h
+FR-302, FR-304
+S5-B05
+Buat PricingService: lockPrice, unlockPrice
+BE
+2h
+FR-306
+S5-B06
+Buat PricingService: createTier (multi-tier per produk)
+BE
+2h
+FR-305
+S5-B07
+Buat ProductPriceRepository (interface + Eloquent)
+BE
+2h
+Repository
+S5-B08
+Buat PricingController: index (tabel HPP per toko), store, update, lock, unlock
+BE
+4h
+FR-301 s/d FR-310
+S5-B09
+Buat query: daftar avg_cost per toko per produk untuk tampilan Pricing Engine
+BE
+2h
+FR-303
+S5-B10
+Buat Event: PriceLocked
+BE
+1h
+Event
+S5-B11
+Buat Listener: SyncPriceToAllBranches (broadcast via Echo)
+BE
+2h
+FR-308
+S5-B12
+Implementasi: produk tanpa harga locked tidak muncul di query POS
+BE
+1h
+FR-307
+S5-B13
+Implementasi hpp_baseline auto-recalc saat InboundCreated
+BE
+2h
+SRS v1.1 Bab 5.5
+S5-B14
+Implementasi notifikasi HPP delta ke Owner (saat baseline berubah)
+BE
+3h
+FR-310
+
+Frontend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S5-F01
+Buat halaman PricingIndex.jsx (list produk, status Pending/Locked)
+FE
+3h
+FR-301
+S5-F02
+Buat komponen PricingDetail.jsx (tabel avg_cost per toko + qty)
+FE
+4h
+FR-303
+S5-F03
+Buat komponen MarginCalculator.jsx (input margin%, preview harga real-time)
+FE
+3h
+FR-302
+S5-F04
+Buat komponen HPPRounder.jsx (input pembulatan, tampil harga final)
+FE
+2h
+FR-304
+S5-F05
+Buat komponen TierManager.jsx (tambah/edit tier: Ecer, Grosir)
+FE
+3h
+FR-305
+S5-F06
+Buat button Lock/Unlock dengan konfirmasi
+FE
+1h
+FR-306
+S5-F07
+Tampilkan preview margin aktual per toko di samping harga jual
+FE
+2h
+SRS v1.1 Bab 5.3
+S5-F08
+Test: full pricing flow end-to-end, lock, cek produk muncul di POS query
+QA
+2h
+
+
+Sprint 6 — POS Offline + Shift Management
+Minggu 6  |  Deliverable: POS Kasir fungsional penuh (online mode), shift buka/tutup, diskon, safeguard.
+
+Backend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S6-B01
+Buat migration: tabel shifts
+BE
+1h
+Tabel shifts
+S6-B02
+Buat migration: tabel transactions (incl discount_note)
+BE
+2h
+Tabel + SRS v1.2
+S6-B03
+Buat migration: tabel transaction_items
+BE
+1h
+Tabel
+S6-B04
+Buat Model: Shift, Transaction, TransactionItem + relasi
+BE
+2h
+Model
+S6-B05
+Buat ShiftService: open, close, calculateReconciliation
+BE
+3h
+FR-401, FR-411
+S6-B06
+Buat ShiftRepository + ShiftController
+BE
+2h
+
+S6-B07
+Buat POSOfflineService: processTransaction (core method)
+BE
+6h
+FR-402 s/d FR-413
+S6-B08
+Implementasi: snapshot hpp_at_sale dari inventories.avg_cost saat transaksi
+BE
+2h
+FR-412
+S6-B09
+Implementasi: validasi safeguard berat (query weight_safeguards)
+BE
+2h
+FR-405
+S6-B10
+Implementasi: validasi diskon (discount <= subtotal, discount_note wajib)
+BE
+2h
+FR-1201 s/d FR-1203
+S6-B11
+Buat Event: TransactionCompleted
+BE
+1h
+Event
+S6-B12
+Buat Listener: DeductSalesInventory (kurangi stok)
+BE
+2h
+Listener
+S6-B13
+Buat POSOfflineController: index (katalog + harga locked), store
+BE
+3h
+Controller
+S6-B14
+Implementasi auto-generate transaction number: TRX-{CODE}-YYYYMMDD-XXXX
+BE
+1h
+
+S6-B15
+Buat Event: ShiftClosed + Listener: CalculateShiftReconciliation
+BE
+2h
+Event/Listener
+
+Frontend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S6-F01
+Buat halaman POSOffline.jsx (layout: grid produk kiri, keranjang kanan)
+FE
+5h
+FR-402
+S6-F02
+Buat komponen ProductGrid.jsx (search, filter kategori, quick-button)
+FE
+3h
+FR-403
+S6-F03
+Buat komponen POSCart.jsx (list item, qty, subtotal, hapus item)
+FE
+3h
+
+S6-F04
+Buat komponen WeightInput.jsx (input gramasi + validasi safeguard)
+FE
+3h
+FR-404, FR-405
+S6-F05
+Buat komponen DiscountInput.jsx (field diskon + discount_note wajib)
+FE
+2h
+FR-1201, FR-1202
+S6-F06
+Buat komponen PaymentModal.jsx (input bayar, hitung kembalian, metode)
+FE
+3h
+FR-407
+S6-F07
+Buat fitur Hold/Resume transaksi (simpan keranjang temporary)
+FE
+3h
+FR-406
+S6-F08
+Buat komponen ReceiptPreview.jsx (struk digital, trigger browser print)
+FE
+2h
+FR-408
+S6-F09
+Buat halaman ShiftPage.jsx (buka shift, rekap, tutup shift)
+FE
+3h
+FR-401, FR-411
+S6-F10
+Buat komponen ShiftOpenModal.jsx (input saldo awal)
+FE
+1h
+
+S6-F11
+Buat komponen ShiftCloseModal.jsx (input saldo aktual, tampil selisih)
+FE
+2h
+FR-411
+S6-F12
+Test: full POS flow, safeguard, diskon, shift buka/tutup
+QA
+3h
+
+
+Sprint 7 — POS Online + Offline Sync
+Minggu 7  |  Deliverable: POS Online fungsional, Dexie.js offline storage, service worker, auto-sync.
+
+Backend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S7-B01
+Buat migration: tabel online_order_details
+BE
+1h
+Tabel
+S7-B02
+Buat Model: OnlineOrderDetail + relasi 1:1 dengan Transaction
+BE
+1h
+Model
+S7-B03
+Buat POSOnlineService: processOrder (incl customer, kurir, ongkir)
+BE
+4h
+FR-501 s/d FR-506
+S7-B04
+Buat POSOnlineController: index, store
+BE
+2h
+Controller
+S7-B05
+Implementasi label Penjualan Online di transaction.type = 'online'
+BE
+1h
+FR-505
+S7-B06
+Buat OfflineSyncService: syncTransactions (dedup via offline_uuid)
+BE
+4h
+FR-410
+S7-B07
+Buat POSOfflineController@sync endpoint (POST /pos/offline/sync)
+BE
+2h
+FR-410
+S7-B08
+Implementasi dedup logic: reject jika offline_uuid sudah ada
+BE
+2h
+
+S7-B09
+Implementasi batch sync: terima array transaksi, proses sequentially
+BE
+2h
+
+
+Frontend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S7-F01
+Buat halaman POSOnline.jsx (form pelanggan, item, kurir, ongkir)
+FE
+5h
+FR-501 s/d FR-504
+S7-F02
+Buat komponen CustomerForm.jsx (nama, telp, alamat, platform dropdown)
+FE
+2h
+FR-501, FR-502
+S7-F03
+Buat komponen DeliveryForm.jsx (kurir, metode kirim, ongkir)
+FE
+2h
+FR-503
+S7-F04
+Buat komponen PaymentMethodSelector.jsx (transfer, ewallet, COD, marketplace)
+FE
+2h
+FR-504
+S7-F05
+Setup Dexie.js: definisi schema offline DB (products, prices, transactions)
+FE
+3h
+FR-409
+S7-F06
+Buat lib/offlineDB.js: CRUD operations untuk Dexie
+FE
+2h
+
+S7-F07
+Buat hook useOfflineSync.js: deteksi koneksi, auto-sync pending transactions
+FE
+4h
+FR-410
+S7-F08
+Implementasi service worker (Workbox) untuk cache asset POS
+FE
+3h
+FR-409
+S7-F09
+Implementasi offline indicator di header POS (online/offline badge)
+FE
+1h
+
+S7-F10
+Modifikasi POSOffline.jsx: simpan ke Dexie jika offline, ke server jika online
+FE
+3h
+FR-409
+S7-F11
+Implementasi UUID v4 generation per transaksi offline
+FE
+1h
+
+S7-F12
+Test: POS Online end-to-end, data pelanggan tersimpan
+QA
+2h
+
+S7-F13
+Test: simulate offline → transaksi → online → auto-sync → verify di server
+QA
+3h
+
+
+Sprint 8 — Mutasi Stok + Waste + Stock Opname
+Minggu 8  |  Deliverable: Mutasi antar-toko, waste submission + approval, stock opname + adjustment.
+
+Backend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S8-B01
+Buat migration: tabel stock_mutations + stock_mutation_items
+BE
+2h
+Tabel
+S8-B02
+Buat migration: tabel waste_requests + waste_request_items
+BE
+2h
+Tabel
+S8-B03
+Buat migration: tabel stock_opnames + stock_opname_items
+BE
+2h
+Tabel
+S8-B04
+Buat Model: semua 6 model + relasi
+BE
+3h
+Model
+S8-B05
+Buat MutationService: create, ship, receive, complete
+BE
+5h
+FR-601 s/d FR-605
+S8-B06
+Implementasi WAC recalc di toko tujuan saat mutasi received
+BE
+3h
+FR-604, SRS v1.2 Bab 3
+S8-B07
+Buat MutationRepository + MutationController
+BE
+3h
+
+S8-B08
+Buat Event: MutationShipped, MutationReceived + Listeners
+BE
+3h
+Event/Listener
+S8-B09
+Buat WasteService: submit, approve, reject
+BE
+4h
+FR-701 s/d FR-706
+S8-B10
+Implementasi foto upload wajib untuk waste (Laravel Storage)
+BE
+2h
+FR-701
+S8-B11
+Buat WasteRepository + WasteController
+BE
+3h
+
+S8-B12
+Buat Event: WasteSubmitted, WasteApproved + Listeners
+BE
+3h
+Event/Listener
+S8-B13
+Buat StockOpnameService: startSession, inputCounts, submit, approve
+BE
+5h
+FR-801 s/d FR-806
+S8-B14
+Implementasi snapshot stok saat sesi opname dimulai
+BE
+2h
+FR-801
+S8-B15
+Buat OpnameRepository + OpnameController
+BE
+3h
+
+S8-B16
+Implementasi stok adjustment setelah Owner approve
+BE
+2h
+FR-805
+
+Frontend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S8-F01
+Buat halaman MutationIndex.jsx (list mutasi, filter status)
+FE
+2h
+
+S8-F02
+Buat komponen MutationForm.jsx (toko tujuan, item, qty)
+FE
+3h
+FR-601
+S8-F03
+Buat flow button: Ship → Receive → Complete (status transitions)
+FE
+3h
+FR-602
+S8-F04
+Buat komponen ReceiveConfirmation.jsx (input qty diterima, hitung loss)
+FE
+2h
+FR-604, FR-605
+S8-F05
+Buat halaman WasteIndex.jsx (Stockist: submit form, Owner: approval list)
+FE
+3h
+FR-701
+S8-F06
+Buat komponen WasteForm.jsx (produk, qty, alasan, foto upload)
+FE
+3h
+FR-701
+S8-F07
+Buat komponen WasteApproval.jsx (Owner: lihat detail + foto, approve/reject)
+FE
+3h
+FR-704, FR-705
+S8-F08
+Buat halaman OpnameIndex.jsx + OpnameForm.jsx (input hitungan fisik)
+FE
+4h
+FR-801, FR-802
+S8-F09
+Buat komponen OpnameResult.jsx (tabel selisih, nilai penyusutan)
+FE
+2h
+FR-803
+S8-F10
+Buat flow Owner approval untuk opname adjustment
+FE
+2h
+FR-805
+S8-F11
+Test: mutasi end-to-end, waste approval flow, opname + adjustment
+QA
+3h
+
+
+Sprint 9 — Dashboard + Laporan + Reorder Point
+Minggu 9  |  Deliverable: Dashboard Owner, semua laporan, reorder point dengan alert real-time.
+
+Backend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S9-B01
+Buat migration: tabel reorder_points
+BE
+1h
+SRS v1.2 Bab 3.3
+S9-B02
+Buat Model: ReorderPoint + relasi
+BE
+1h
+Model
+S9-B03
+Buat ReorderPointService: set, update, toggle, checkThreshold
+BE
+4h
+FR-1207 s/d FR-1215
+S9-B04
+Buat ReorderPointRepository + ReorderPointController
+BE
+3h
+
+S9-B05
+Buat Listener: CheckReorderPoint (attach ke 3 events)
+BE
+4h
+SRS v1.2 Bab 3.4
+S9-B06
+Implementasi cooldown 1 jam per produk per toko
+BE
+2h
+FR-1214
+S9-B07
+Buat DashboardService: KPI harian (revenue, laba, transaksi, alerts)
+BE
+4h
+FR-901
+S9-B08
+Buat DashboardController: index (Owner dashboard)
+BE
+2h
+
+S9-B09
+Buat ReportService: profitLoss (struktur baru v1.2 incl ongkir + diskon)
+BE
+5h
+FR-902, SRS v1.2 Bab 5
+S9-B10
+Buat ReportService: salesByChannel (offline per toko vs online per platform)
+BE
+3h
+FR-903
+S9-B11
+Buat ReportService: inventoryReport (stok per toko + avg_cost, filter low stock)
+BE
+3h
+FR-904
+S9-B12
+Buat ReportService: wasteReport (tren per item per bulan)
+BE
+2h
+FR-905
+S9-B13
+Buat ReportService: shiftReport (per kasir, filtered by role)
+BE
+2h
+FR-906, FR-907
+S9-B14
+Buat ReportService: discountReport (filter discount > 0)
+BE
+2h
+FR-1205
+S9-B15
+Buat ReportService: shippingCostReport (total ongkir per toko per periode)
+BE
+2h
+FR-1218
+S9-B16
+Buat ReportService: hppComparisonReport (avg_cost per toko per produk)
+BE
+2h
+FR-1111
+S9-B17
+Buat ReportController: semua endpoint laporan
+BE
+3h
+
+S9-B18
+Setup Laravel Echo + Soketi untuk real-time notifications
+BE
+3h
+Realtime
+
+Frontend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S9-F01
+Buat halaman OwnerDashboard.jsx (KPI cards, revenue per toko, notifikasi)
+FE
+5h
+FR-901
+S9-F02
+Buat komponen KPICards.jsx (revenue, laba, transaksi, waste pending, low stock)
+FE
+2h
+
+S9-F03
+Buat komponen RevenueByStore.jsx (bar chart per toko)
+FE
+2h
+
+S9-F04
+Buat komponen LowStockAlerts.jsx (list produk di bawah threshold)
+FE
+2h
+FR-1213
+S9-F05
+Buat halaman ReportProfitLoss.jsx (tabel laba-rugi, filter periode)
+FE
+4h
+FR-902
+S9-F06
+Buat halaman ReportSales.jsx (breakdown per kanal/toko/platform)
+FE
+3h
+FR-903
+S9-F07
+Buat halaman ReportInventory.jsx (stok per toko, avg_cost, highlight highest)
+FE
+3h
+FR-904
+S9-F08
+Buat halaman ReportWaste.jsx (tren chart per bulan)
+FE
+2h
+FR-905
+S9-F09
+Buat halaman ReportShifts.jsx (per kasir, Kasir/Admin lihat shift sendiri)
+FE
+2h
+FR-906
+S9-F10
+Buat halaman ReportDiscount.jsx (filter transaksi dengan diskon)
+FE
+2h
+FR-1205
+S9-F11
+Buat halaman ReorderPointIndex.jsx (list threshold per produk per toko)
+FE
+3h
+FR-1207
+S9-F12
+Buat komponen ReorderPointForm.jsx (pilih produk, set min_qty)
+FE
+2h
+FR-1207
+S9-F13
+Implementasi real-time notification via Echo (bell icon update live)
+FE
+3h
+
+S9-F14
+Test: dashboard data accuracy, semua laporan, reorder point alert
+QA
+3h
+
+
+Sprint 10 — Integration Testing + Polish + Deploy
+Minggu 10  |  Deliverable: Sistem production-ready. UAT sign-off. Go-live.
+
+Backend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S10-B01
+Tulis unit test: AuthService (login, logout, session timeout)
+BE
+2h
+Testing
+S10-B02
+Tulis unit test: InboundService (HPP calculation, WAC)
+BE
+3h
+Testing
+S10-B03
+Tulis unit test: PricingService (baseline, lock, margin calc)
+BE
+3h
+Testing
+S10-B04
+Tulis unit test: POSOfflineService (transaction, safeguard, discount)
+BE
+3h
+Testing
+S10-B05
+Tulis unit test: MutationService (status transitions, WAC recalc)
+BE
+2h
+Testing
+S10-B06
+Tulis unit test: WasteService (approve/reject, stok deduction)
+BE
+2h
+Testing
+S10-B07
+Tulis unit test: ReorderPointService (threshold check, cooldown)
+BE
+2h
+Testing
+S10-B08
+Tulis integration test: full PO → Inbound → Pricing → POS → Report flow
+BE
+4h
+Testing
+S10-B09
+Tulis integration test: RBAC enforcement (setiap role akses benar)
+BE
+2h
+Testing
+S10-B10
+Tulis integration test: LocationScope isolation (data antar-toko tidak bocor)
+BE
+2h
+NFR-16
+S10-B11
+Performance test: POS response time < 2 detik
+BE
+2h
+NFR-01
+S10-B12
+Setup production server (Nginx, PHP-FPM, MySQL, Redis, SSL)
+BE
+4h
+Deploy
+S10-B13
+Setup Laravel queue worker (Supervisor) untuk async jobs
+BE
+2h
+Deploy
+S10-B14
+Konfigurasi HTTPS/TLS, CORS, production .env
+BE
+2h
+NFR-06
+S10-B15
+Run migration + seeder di production
+BE
+1h
+Deploy
+S10-B16
+Buat deployment script (git pull, migrate, cache clear, queue restart)
+BE
+2h
+Deploy
+
+Frontend Tasks
+ID
+Task
+Type
+Est
+FR / Ref
+S10-F01
+Tulis Vitest: komponen POS (cart, payment, safeguard)
+FE
+3h
+Testing
+S10-F02
+Tulis Vitest: komponen Pricing Engine (margin calc, tier)
+FE
+2h
+Testing
+S10-F03
+Tulis Vitest: offline sync hook (Dexie CRUD, UUID gen, sync flow)
+FE
+3h
+Testing
+S10-F04
+Cross-browser testing: Chrome, Firefox, Safari, Edge
+QA
+3h
+NFR-14
+S10-F05
+Responsive testing: desktop, tablet (POS usage)
+QA
+2h
+
+S10-F06
+UAT dengan Owner: dashboard, pricing, approval flows
+QA
+4h
+UAT
+S10-F07
+UAT dengan Stockist: PO, inbound, mutasi, waste, opname
+QA
+4h
+UAT
+S10-F08
+UAT dengan Kasir: POS offline, shift, diskon, struk
+QA
+3h
+UAT
+S10-F09
+UAT dengan Admin: POS online, data pelanggan, kurir
+QA
+2h
+UAT
+S10-F10
+Bug fixing dari hasil UAT (buffer)
+FE
+8h
+Buffer
+S10-F11
+Bug fixing backend dari hasil UAT (buffer)
+BE
+8h
+Buffer
+S10-F12
+Build production assets (Vite build, optimize)
+FE
+1h
+Deploy
+S10-F13
+Go-live deployment + smoke test production
+QA
+2h
+Deploy
+S10-F14
+Handover dokumentasi: deployment guide, user manual singkat
+QA
+4h
+Docs
+
+Ringkasan Sprint Plan
+Sprint
+Fokus
+BE Tasks
+FE Tasks
+QA Tasks
+Total
+S1
+Setup + Auth
+18
+12
+—
+30
+S2
+Toko + User + RBAC
+16
+10
+—
+26
+S3
+Data Master + Supplier
+18
+9
+—
+27
+S4
+PO + Inbound + WAC
+20
+9
+—
+29
+S5
+Pricing Engine
+14
+8
+—
+22
+S6
+POS Offline + Shift
+15
+12
+—
+27
+S7
+POS Online + Offline Sync
+9
+13
+—
+22
+S8
+Mutasi + Waste + Opname
+16
+11
+—
+27
+S9
+Dashboard + Laporan + Reorder
+18
+14
+—
+32
+S10
+Testing + Deploy
+16
+14
+—
+30
+
+TOTAL
+160
+112
+—
+~272 tasks
+
+DEPENDENCY CHAIN:
+S1 (Auth) → S2 (Toko/User) → S3 (Master) → S4 (PO/Inbound/WAC)
+  → S5 (Pricing) → S6 (POS Offline) → S7 (POS Online + Sync)
+  → S8 (Mutasi/Waste/Opname) → S9 (Dashboard/Laporan/Reorder)
+  → S10 (Testing/Deploy)
+
+Setiap sprint BE mendahului FE. Sprint S6-S7 dan S8 bisa partially overlap
+jika ada 2+ developer.
+
+
+— Akhir Dokumen Sprint Plan FruityPOS —

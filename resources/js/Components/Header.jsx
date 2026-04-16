@@ -1,14 +1,33 @@
 import React from 'react';
-import { usePage } from '@inertiajs/react';
+import { usePage, Link } from '@inertiajs/react';
 
-export default function Header({ title }) {
+export default function Header({ title, breadcrumbs }) {
     const { auth } = usePage().props;
     const user = auth?.user || {};
 
     return (
         <header className="h-16 bg-white border-b border-border flex items-center justify-between px-6 shrink-0">
-            <div className="text-text-secondary text-sm font-medium">
-                Home / <span className="text-text-primary capitalize">{title || 'Dashboard'}</span>
+            <div className="text-text-secondary text-sm font-medium flex items-center gap-2">
+                {breadcrumbs ? (
+                    breadcrumbs.map((bc, idx) => (
+                        <React.Fragment key={idx}>
+                            {bc.url ? (
+                                <Link href={bc.url} className="hover:text-emerald-600 transition-colors">
+                                    {bc.label}
+                                </Link>
+                            ) : (
+                                <span className="text-slate-800 font-semibold">{bc.label}</span>
+                            )}
+                            {idx < breadcrumbs.length - 1 && <span className="text-slate-300">/</span>}
+                        </React.Fragment>
+                    ))
+                ) : (
+                    <>
+                        <Link href="/dashboard" className="hover:text-emerald-600 transition-colors">Home</Link>
+                        <span className="text-slate-300">/</span>
+                        <span className="text-slate-800 font-semibold capitalize">{title || 'Dashboard'}</span>
+                    </>
+                )}
             </div>
             
             <div className="flex items-center space-x-4">

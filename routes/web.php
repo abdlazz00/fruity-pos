@@ -26,9 +26,27 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->middleware(RoleMiddleware::class . ':owner')->name('dashboard');
+    Route::middleware(RoleMiddleware::class . ':owner')->group(function () {
+        Route::get('/dashboard', function () {
+            return Inertia::render('Dashboard');
+        })->name('dashboard');
+
+        // Stores
+        Route::get('/stores', [\App\Http\Controllers\StoreController::class, 'index'])->name('stores.index');
+        Route::get('/stores/create', [\App\Http\Controllers\StoreController::class, 'create'])->name('stores.create');
+        Route::post('/stores', [\App\Http\Controllers\StoreController::class, 'store'])->name('stores.store');
+        Route::get('/stores/{store}/edit', [\App\Http\Controllers\StoreController::class, 'edit'])->name('stores.edit');
+        Route::put('/stores/{store}', [\App\Http\Controllers\StoreController::class, 'update'])->name('stores.update');
+        Route::patch('/stores/{store}/toggle', [\App\Http\Controllers\StoreController::class, 'toggle'])->name('stores.toggle');
+
+        // Users
+        Route::get('/users', [\App\Http\Controllers\UserController::class, 'index'])->name('users.index');
+        Route::get('/users/create', [\App\Http\Controllers\UserController::class, 'create'])->name('users.create');
+        Route::post('/users', [\App\Http\Controllers\UserController::class, 'store'])->name('users.store');
+        Route::get('/users/{user}/edit', [\App\Http\Controllers\UserController::class, 'edit'])->name('users.edit');
+        Route::put('/users/{user}', [\App\Http\Controllers\UserController::class, 'update'])->name('users.update');
+        Route::patch('/users/{user}/toggle', [\App\Http\Controllers\UserController::class, 'toggle'])->name('users.toggle');
+    });
 
     Route::get('/master/products', function () {
         return Inertia::render('Placeholder', ['title' => 'Master Products']);

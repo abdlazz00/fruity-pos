@@ -3,7 +3,7 @@ import { usePage } from '@inertiajs/react';
 import Sidebar from '../Components/Sidebar';
 import Header from '../Components/Header';
 
-export default function AppLayout({ children, title }) {
+export default function AppLayout({ children, title, breadcrumbs }) {
     const { auth } = usePage().props;
     const isKasir = auth?.user?.role === 'kasir';
     const [isCollapsed, setCollapsed] = useState(isKasir);
@@ -17,7 +17,7 @@ export default function AppLayout({ children, title }) {
             <Sidebar isCollapsed={isCollapsed} setCollapsed={setCollapsed} />
             
             <div className={`flex-1 flex flex-col transition-all duration-300 ${isCollapsed ? 'ml-16' : 'ml-60'}`}>
-                <Header title={title} />
+                <Header title={title} breadcrumbs={breadcrumbs} />
                 
                 <main className="flex-1 p-6 overflow-y-auto">
                     {children}
