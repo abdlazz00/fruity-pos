@@ -63,7 +63,11 @@ class StoreController extends Controller
 
     public function toggle($id)
     {
-        $this->storeService->toggleStore($id);
-        return back()->with('status', 'Status toko berhasil diubah.');
+        try {
+            $this->storeService->toggleStore($id);
+            return back()->with('status', 'Status toko berhasil diubah.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->with('error', collect($e->errors())->flatten()->first());
+        }
     }
 }

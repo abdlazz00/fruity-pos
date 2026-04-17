@@ -42,7 +42,7 @@ export default function StoreIndex({ stores }) {
                     </div>
                     <button 
                         onClick={handleCreate}
-                        className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white px-5 py-2.5 rounded-xl font-medium shadow-sm shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all text-sm"
+                        className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white px-5 py-2.5 rounded-xl font-medium shadow-sm shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all text-sm"
                     >
                         <Plus className="w-4 h-4" />
                         Tambah Toko Baru
@@ -73,7 +73,7 @@ export default function StoreIndex({ stores }) {
                         <input 
                             type="text" 
                             placeholder="Cari toko berdasarkan nama atau kode..." 
-                            className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm"
+                            className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-sm"
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                         />
@@ -94,7 +94,7 @@ export default function StoreIndex({ stores }) {
                             <div key={store.id} className={`bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5 flex flex-col hover:shadow-md transition-all ${!store.is_active ? 'opacity-80 bg-slate-50' : ''}`}>
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                                        <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
                                             <Store className="w-6 h-6" />
                                         </div>
                                         <div className="mt-0.5">
@@ -104,7 +104,7 @@ export default function StoreIndex({ stores }) {
                                     </div>
                                     
                                     <div className="flex items-center gap-0.5">
-                                        <button onClick={() => handleEdit(store)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors tooltip" title="Edit Data">
+                                        <button onClick={() => handleEdit(store)} className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors tooltip" title="Edit Data">
                                             <Edit className="w-4 h-4" />
                                         </button>
                                         <button onClick={() => handleToggle(store.id)} className={`p-1.5 rounded-lg transition-colors ${store.is_active ? 'text-slate-400 hover:text-red-500 hover:bg-red-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`} title={store.is_active ? 'Nonaktifkan' : 'Aktifkan'}>
@@ -176,7 +176,7 @@ export default function StoreIndex({ stores }) {
                                 <Store className="w-12 h-12 mb-3 opacity-20" />
                                 <p className="text-lg font-medium text-slate-600">Data toko tidak ditemukan</p>
                                 <p className="text-sm mt-1 mb-4">Coba sesuaikan kata kunci pencarian atau tambah toko baru.</p>
-                                <button onClick={handleCreate} className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-sm font-semibold hover:bg-indigo-100 transition-colors inline-flex items-center gap-2">
+                                <button onClick={handleCreate} className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-sm font-semibold hover:bg-emerald-100 transition-colors inline-flex items-center gap-2">
                                     <Plus className="w-4 h-4" />
                                     Tambah Toko Sekarang
                                 </button>
@@ -194,7 +194,7 @@ export default function StoreIndex({ stores }) {
                                 <Link 
                                     key={k} 
                                     href={link.url || '#'} 
-                                    className={`px-3 py-1.5 rounded-lg border transition-all ${link.active ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'} ${!link.url && 'opacity-50 cursor-not-allowed hidden md:block'}`}
+                                    className={`px-3 py-1.5 rounded-lg border transition-all ${link.active ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'} ${!link.url && 'opacity-50 cursor-not-allowed hidden md:block'}`}
                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                 />
                             ))}

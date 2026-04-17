@@ -56,7 +56,7 @@ export default function StoreFormPage({ store, unassignedUsers }) {
                         
                         <div className="p-8 border-b border-slate-100 bg-slate-50/30">
                             <h2 className="text-xl font-bold tracking-tight text-slate-800 flex items-center gap-2">
-                                <Store className="w-5 h-5 text-indigo-600" />
+                                <Store className="w-5 h-5 text-emerald-600" />
                                 {isEdit ? 'Formulir Edit Toko' : 'Formulir Pendaftaran Toko'}
                             </h2>
                             <p className="text-sm text-slate-500 mt-1">
@@ -69,7 +69,7 @@ export default function StoreFormPage({ store, unassignedUsers }) {
                             {/* Section 1: Informasi Toko */}
                             <div>
                                 <h3 className="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2 border-b pb-2">
-                                    <span className="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">1</span>
+                                    <span className="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">1</span>
                                     Informasi Dasar Toko
                                 </h3>
                                 
@@ -82,7 +82,7 @@ export default function StoreFormPage({ store, unassignedUsers }) {
                                                 type="text"
                                                 value={data.name}
                                                 onChange={e => setData('name', e.target.value)}
-                                                className={`pl-10 w-full py-2.5 rounded-xl border focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm transition-colors ${errors.name ? 'border-red-400 focus:border-red-500 bg-red-50' : 'border-slate-200 bg-slate-50'}`}
+                                                className={`pl-10 w-full py-2.5 rounded-xl border focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-colors ${errors.name ? 'border-red-400 focus:border-red-500 bg-red-50' : 'border-slate-200 bg-slate-50'}`}
                                                 placeholder="Cth: Cabang Utama Sudirman"
                                             />
                                         </div>
@@ -98,7 +98,7 @@ export default function StoreFormPage({ store, unassignedUsers }) {
                                                 value={data.code}
                                                 onChange={e => setData('code', e.target.value.toUpperCase())}
                                                 maxLength={10}
-                                                className={`pl-10 w-full py-2.5 rounded-xl border focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm transition-colors font-mono uppercase ${errors.code ? 'border-red-400 focus:border-red-500 bg-red-50' : 'border-slate-200 bg-slate-50'}`}
+                                                className={`pl-10 w-full py-2.5 rounded-xl border focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-colors font-mono uppercase ${errors.code ? 'border-red-400 focus:border-red-500 bg-red-50' : 'border-slate-200 bg-slate-50'}`}
                                                 placeholder="Cth: SDIR-01"
                                             />
                                         </div>
@@ -113,7 +113,7 @@ export default function StoreFormPage({ store, unassignedUsers }) {
                                                 value={data.address}
                                                 onChange={e => setData('address', e.target.value)}
                                                 rows="3"
-                                                className={`pl-10 w-full py-2.5 rounded-xl border focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm transition-colors ${errors.address ? 'border-red-400 focus:border-red-500 bg-red-50' : 'border-slate-200 bg-slate-50'}`}
+                                                className={`pl-10 w-full py-2.5 rounded-xl border focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-colors ${errors.address ? 'border-red-400 focus:border-red-500 bg-red-50' : 'border-slate-200 bg-slate-50'}`}
                                                 placeholder="Masukkan alamat lengkap cabang toko..."
                                             ></textarea>
                                         </div>
@@ -128,7 +128,7 @@ export default function StoreFormPage({ store, unassignedUsers }) {
                                                 type="text"
                                                 value={data.phone}
                                                 onChange={e => setData('phone', e.target.value)}
-                                                className={`pl-10 w-full py-2.5 rounded-xl border focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm transition-colors tracking-wide ${errors.phone ? 'border-red-400 focus:border-red-500 bg-red-50' : 'border-slate-200 bg-slate-50'}`}
+                                                className={`pl-10 w-full py-2.5 rounded-xl border focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-colors tracking-wide ${errors.phone ? 'border-red-400 focus:border-red-500 bg-red-50' : 'border-slate-200 bg-slate-50'}`}
                                                 placeholder="Cth: 0812XXXXXXXX"
                                             />
                                         </div>
@@ -143,7 +143,7 @@ export default function StoreFormPage({ store, unassignedUsers }) {
                                                 type="date"
                                                 value={data.opened_at}
                                                 onChange={e => setData('opened_at', e.target.value)}
-                                                className={`pl-10 w-full py-2.5 rounded-xl border focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm transition-colors ${errors.opened_at ? 'border-red-400 focus:border-red-500 bg-red-50' : 'border-slate-200 bg-slate-50'}`}
+                                                className={`pl-10 w-full py-2.5 rounded-xl border focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-colors ${errors.opened_at ? 'border-red-400 focus:border-red-500 bg-red-50' : 'border-slate-200 bg-slate-50'}`}
                                             />
                                         </div>
                                         {errors.opened_at && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.opened_at}</p>}
@@ -162,7 +162,7 @@ export default function StoreFormPage({ store, unassignedUsers }) {
                                                 checked={data.is_active}
                                                 onChange={e => setData('is_active', e.target.checked)}
                                             />
-                                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                                         </label>
                                     </div>
                                     {errors.is_active && <p className="text-red-500 text-xs mt-1 md:col-span-2 font-medium">{errors.is_active}</p>}
@@ -172,12 +172,12 @@ export default function StoreFormPage({ store, unassignedUsers }) {
                             {/* Section 2: Penugasan Staff */}
                             <div className="pt-2">
                                 <h3 className="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2 border-b pb-2">
-                                    <span className="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">2</span>
+                                    <span className="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">2</span>
                                     Penugasan Staf
                                 </h3>
                                 
-                                <div className="mb-4 text-sm text-slate-600 bg-blue-50 text-blue-800 p-4 rounded-xl border border-blue-100 flex items-start gap-3">
-                                    <Users className="w-5 h-5 shrink-0 mt-0.5 text-blue-600" />
+                                <div className="mb-4 text-sm text-slate-600 bg-emerald-50 text-emerald-800 p-4 rounded-xl border border-emerald-100 flex items-start gap-3">
+                                    <Users className="w-5 h-5 shrink-0 mt-0.5 text-emerald-600" />
                                     <div>
                                         Anda dapat langsung menugaskan staf untuk ditempatkan pada cabang ini. 
                                         Daftar di bawah ini berisi seluruh staf yang <strong>belum ditugaskan</strong> ke toko mana pun atau staf yang sudah Anda tugaskan sebelumnya ke toko ini (jika mode edit).
@@ -191,12 +191,12 @@ export default function StoreFormPage({ store, unassignedUsers }) {
                                             return (
                                                 <label 
                                                     key={user.id} 
-                                                    className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isChecked ? 'bg-indigo-50 border-indigo-200 shadow-sm shadow-indigo-100' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300'}`}
+                                                    className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isChecked ? 'bg-emerald-50 border-emerald-200 shadow-sm shadow-emerald-100' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-slate-300'}`}
                                                 >
                                                     <div className="flex items-center h-5">
                                                         <input 
                                                             type="checkbox" 
-                                                            className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-600"
+                                                            className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-600"
                                                             checked={isChecked}
                                                             onChange={() => toggleUserSelection(user.id)}
                                                         />
@@ -205,7 +205,7 @@ export default function StoreFormPage({ store, unassignedUsers }) {
                                                         <div className="font-semibold text-slate-800 text-sm flex items-center gap-2">
                                                             {user.name} 
                                                             <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
-                                                                ${user.role === 'admin' ? 'bg-indigo-100 text-indigo-700' : 
+                                                                ${user.role === 'admin' ? 'bg-emerald-100 text-emerald-700' : 
                                                                 user.role === 'stockist' ? 'bg-sky-100 text-sky-700' : 
                                                                 'bg-slate-200 text-slate-700'}
                                                             `}>
@@ -243,7 +243,7 @@ export default function StoreFormPage({ store, unassignedUsers }) {
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors shadow-sm shadow-indigo-500/30 disabled:opacity-75 disabled:cursor-not-allowed"
+                                    className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors shadow-sm shadow-emerald-500/30 disabled:opacity-75 disabled:cursor-not-allowed"
                                 >
                                     {processing && (
                                         <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">

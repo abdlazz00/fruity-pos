@@ -157,7 +157,7 @@ export default function UserIndex({ users, locations }) {
                                         <td className="py-4 px-6">
                                             {user.location ? (
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></div>
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
                                                     <span className="font-medium text-slate-700 text-sm">{user.location.name}</span>
                                                 </div>
                                             ) : (
@@ -174,7 +174,7 @@ export default function UserIndex({ users, locations }) {
                                         </td>
                                         <td className="py-4 px-6">
                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={() => handleEdit(user)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors tooltip" title="Edit Data">
+                                                <button onClick={() => handleEdit(user)} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors tooltip" title="Edit Data">
                                                     <Edit className="w-4 h-4" />
                                                 </button>
                                                 <button onClick={() => handleToggle(user.id)} className={`p-2 rounded-lg transition-colors ${user.is_active ? 'text-slate-400 hover:text-red-600 hover:bg-red-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`} title={user.is_active ? 'Nonaktifkan' : 'Aktifkan'}>

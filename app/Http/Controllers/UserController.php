@@ -55,7 +55,11 @@ class UserController extends Controller
 
     public function toggle($id)
     {
-        $this->userService->toggleUser($id);
-        return back()->with('status', 'Status pengguna berhasil diubah.');
+        try {
+            $this->userService->toggleUser($id);
+            return back()->with('status', 'Status pengguna berhasil diubah.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->with('error', collect($e->errors())->flatten()->first());
+        }
     }
 }
