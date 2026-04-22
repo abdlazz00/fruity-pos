@@ -10,7 +10,8 @@ class UserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->check() && auth()->user()->role === Role::OWNER;
+        $user = $this->user();
+        return $user !== null && $user->role === Role::OWNER;
     }
 
     public function rules(): array

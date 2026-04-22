@@ -8,7 +8,8 @@ class StoreRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->check() && auth()->user()->role === \App\Enums\Role::OWNER;
+        $user = $this->user();
+        return $user !== null && $user->role === \App\Enums\Role::OWNER;
     }
 
     public function rules(): array

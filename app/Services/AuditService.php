@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Repositories\Contracts\AuditRepositoryInterface;
+use Illuminate\Support\Facades\Auth;
 
 class AuditService
 {
@@ -25,7 +26,7 @@ class AuditService
     public function logAction($action, $model, $changes = null, $userId = null, $ipAddress = null)
     {
         return $this->repository->log([
-            'user_id' => $userId ?? auth()->id(),
+            'user_id' => $userId ?? Auth::id(),
             'action' => $action,
             'model_type' => get_class($model),
             'model_id' => $model->id,

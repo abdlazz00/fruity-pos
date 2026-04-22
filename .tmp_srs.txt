@@ -1,0 +1,5622 @@
+
+
+
+
+SOFTWARE REQUIREMENTS SPECIFICATION
+
+FruityPOS
+
+Centralized Retail &amp; POS System Toko Buah Multi-Cabang
+
+
+
+
+
+
+FINAL CONSOLIDATED BLUEPRINT
+
+Versi: 2.0 Final  |  Konsolidasi SRS v1.0 + v1.1 + v1.2 + v1.3
+
+
+
+Model: Decentralized Store (Tanpa Gudang Pusat)
+
+Metodologi: Waterfall  |  Pattern: Service-Repository
+
+Laravel 11 + React 18 + Inertia.js + MySQL 8 + Redis + Dexie.js
+
+
+
+Standar: IEEE 830-1998  |  Tanggal: April 2026
+
+
+
+Daftar Isi
+
+Bab 1. Pendahuluan (Tujuan, Ruang Lingkup, Definisi, Referensi)
+
+Bab 2. Deskripsi Umum (Perspektif, 11 Modul, 4 Persona, Batasan, Asumsi)
+
+Bab 3. Arsitektur (Stack, HLA, Service-Repository, Folder, Inertia, Offline, LocationScope)
+
+Bab 4. Database (23 Tabel dengan spesifikasi kolom lengkap)
+
+Bab 5. Keputusan Desain Arsitektural (10 KD + Detail WAC, hpp_baseline, Reorder Point, P&amp;L)
+
+Bab 6. Functional Requirements (105 FR terorganisir per modul)
+
+Bab 7. Use Case (22 UC ringkasan + key UC detail)
+
+Bab 8. RBAC Matrix
+
+Bab 9. Sitemap &amp; Screen Inventory (26 Screen)
+
+Bab 10. Route Specification (~55 routes)
+
+Bab 11. Non-Functional Requirements (18 NFR)
+
+Bab 12. Lampiran (19 Service, 15 Repository, 9 Event + 12 Listener)
+
+
+
+Bab 1. Pendahuluan
+
+
+1.1 Tujuan
+
+Dokumen ini adalah Software Requirements Specification (SRS) Final Consolidated Blueprint untuk FruityPOS. Seluruh keputusan desain, spesifikasi fungsional, arsitektur, skema database, dan artefak navigasi dari SRS v1.0 sampai v1.3 telah digabungkan menjadi satu blueprint tunggal yang otoritatif. Dokumen ini menggantikan semua versi SRS sebelumnya dan menjadi satu-satunya acuan untuk implementasi.
+
+SRS ini disusun mengikuti standar IEEE 830-1998 dan berfungsi sebagai kontrak teknis antara pemangku kepentingan bisnis dan tim pengembang.
+
+
+1.2 Ruang Lingkup
+
+FruityPOS adalah sistem web terpusat untuk manajemen operasional ritel buah-buahan multi-toko dengan model Decentralized Store. Setiap toko adalah unit mandiri dengan gudang built-in, tanpa gudang pusat.
+
+Dalam lingkup:
+
+  11 modul: Data Master, Pengadaan &amp; Inbound, Pricing Engine, POS Offline, POS Online,
+
+  Mutasi Stok, Waste Management, Stock Opname, Dashboard &amp; Laporan,
+
+  Manajemen Pengguna, Manajemen Toko
+
+  RBAC 4 role: Owner, Stockist, Kasir, Admin Online
+
+  Offline-first POS dengan IndexedDB (Dexie.js)
+
+  WAC untuk kalkulasi HPP per toko, hpp_baseline worst-case
+
+
+
+Di luar lingkup:
+
+  Akuntansi GL &amp; Payroll | Integrasi API marketplace langsung
+
+  Integrasi hardware timbangan | Modul retur pelanggan (KD-09)
+
+
+1.3 Definisi &amp; Akronim
+Istilah
+Definisi
+
+SRS
+
+Software Requirements Specification
+
+HPP
+
+Harga Pokok Penjualan (COGS)
+
+WAC
+
+Weighted Average Cost
+
+hpp_baseline
+
+MAX(avg_cost) semua toko
+
+POS
+
+Point of Sale
+
+UoM
+
+Unit of Measure
+
+RBAC
+
+Role-Based Access Control
+
+PO
+
+Purchase Order
+
+Inbound
+
+Penerimaan barang supplier ke toko
+
+Mutasi
+
+Perpindahan stok horizontal antar-toko
+
+Waste
+
+Buah rusak yang diajukan penghapusan
+
+Opname
+
+Audit fisik inventori
+
+Reorder Point
+
+Threshold minimum stok per produk per toko
+
+Decentralized Store
+
+Model tanpa gudang pusat
+
+LocationScope
+
+Middleware auto-filter data per toko
+
+KD
+
+Keputusan Desain (Design Decision)
+
+
+1.4 Referensi
+
+BRD FruityPOS v2.0 | IEEE 830-1998 | Laravel 11 &amp; Inertia.js Docs | Design System (design.md) | Sprint Plan
+
+
+
+Bab 2. Deskripsi Umum Sistem
+
+
+2.1 Perspektif Produk
+
+FruityPOS menggunakan model Decentralized Store. Setiap toko adalah unit operasional mandiri: area gudang + area penjualan. Tidak ada gudang pusat. Semua pengadaan dan inbound langsung ke toko masing-masing. Supplier sama untuk semua toko, hanya beda alamat kirim (KD-06).
+
+Owner memiliki visibilitas penuh ke seluruh toko melalui dashboard terpusat dan mengendalikan harga jual secara seragam melalui Pricing Engine. Harga jual ditentukan berdasarkan hpp_baseline = MAX(avg_cost) untuk menjamin margin minimum di semua lokasi (KD-04).
+
+ARSITEKTUR MULTI-TOKO:
+
+
+
+  [Owner] -- Dashboard Terpusat -- Pricing Engine (harga seragam)
+
+     |
+
+     +-- [Toko Serpong]  Stockist + Kasir + Admin  &lt;-- PO/Inbound sendiri
+
+     +-- [Toko KG]       Stockist + Kasir + Admin  &lt;-- PO/Inbound sendiri
+
+     +-- [Toko BSD]      Stockist + Kasir + Admin  &lt;-- PO/Inbound sendiri
+
+
+
+  Mutasi stok: Toko &lt;-&gt; Toko (horizontal, peer-to-peer)
+
+  Supplier: Tunggal, beda alamat kirim, ongkir terpisah dari HPP
+
+
+2.2 Fungsi Utama (11 Modul)
+Modul
+Kode
+Deskripsi
+Screen
+Sprint
+
+Data Master
+
+M-01
+
+CRUD produk, kategori, UoM, supplier
+
+#16-18
+
+S3
+
+Pengadaan &amp; Inbound
+
+M-02
+
+PO per-toko, inbound, HPP Mentah, WAC update, ongkir terpisah
+
+#19-20
+
+S4
+
+Pricing Engine
+
+M-03
+
+Set margin%, hpp_baseline worst-case, multi-tier, lock harga
+
+#03-04
+
+S5
+
+POS Offline
+
+M-04
+
+Kasir, gramasi, safeguard, shift, diskon, offline mode
+
+#25
+
+S6
+
+POS Online
+
+M-05
+
+Pesanan digital, pelanggan, kurir, ongkir, diskon
+
+#26
+
+S7
+
+Mutasi Stok
+
+M-06
+
+Transfer horizontal, 4 tahap, WAC recalc di tujuan
+
+#21
+
+S8
+
+Waste Management
+
+M-07
+
+Pengajuan + foto, two-step approval Owner
+
+#05,#22
+
+S8
+
+Stock Opname
+
+M-08
+
+Audit fisik per-toko, selisih, adjustment
+
+#23
+
+S8
+
+Dashboard &amp; Laporan
+
+M-09
+
+KPI, laba-rugi, per kanal, stok, HPP, waste, shift, diskon, ongkir, reorder
+
+#02,#06-13,#24
+
+S9
+
+Manajemen Pengguna
+
+M-10
+
+CRUD akun, RBAC 4 role, assign toko, audit log
+
+#15
+
+S2
+
+Manajemen Toko
+
+M-11
+
+CRUD toko, kode unik, validasi staff, onboarding
+
+#14
+
+S2
+
+
+2.3 Karakteristik Pengguna
+Persona
+Role
+Lokasi
+Deskripsi
+Screens
+
+Pak Andi
+
+Owner
+
+Semua
+
+Pricing, approval, dashboard, kelola toko/user. BISA lihat HPP &amp; margin.
+
+14
+
+Budi
+
+Stockist
+
+Per-toko
+
+PO, inbound, mutasi, waste, opname, reorder. TIDAK bisa lihat HPP/harga.
+
+8
+
+Rina
+
+Kasir
+
+Per-toko
+
+POS Offline, shift. Bisa offline. TIDAK bisa lihat HPP/margin.
+
+2
+
+Dina
+
+Admin
+
+Per-toko
+
+POS Online, shift. TIDAK bisa lihat HPP/margin.
+
+2
+
+Setiap toko WAJIB punya minimal 1 Stockist + 1 Kasir + 1 Admin Online (KD-05).
+
+
+2.4 Batasan &amp; Asumsi
+
+Batasan: Tidak ada gudang pusat (KD-03). Harga seragam (KD-04). Supplier tunggal (KD-06). Ongkir terpisah HPP (KD-07). Diskon off-system (KD-08). Tidak ada retur (KD-09). Timbangan manual. Printer via browser. Mata uang: IDR.
+
+Asumsi: Setiap toko punya gudang fisik. Supplier antar langsung. avg_cost beda karena timing reorder. Setiap lokasi punya browser modern. Internet tersedia sebagian besar waktu. Buah homogen (tidak per batch).
+
+
+
+Bab 3. Arsitektur Sistem
+
+
+3.1 Technology Stack
+Layer
+Teknologi
+Fungsi
+
+Backend
+
+Laravel 11
+
+PHP framework, Eloquent ORM, Sanctum auth
+
+Frontend
+
+React 18
+
+UI, Hooks, functional components
+
+Bridge
+
+Inertia.js
+
+Laravel-React tanpa REST API terpisah
+
+CSS
+
+Tailwind CSS 3
+
+Utility-first
+
+Database
+
+MySQL 8
+
+23 tabel relasional
+
+Cache/Queue
+
+Redis 7
+
+Session, cache, job queue
+
+Build
+
+Vite 5
+
+Frontend bundler
+
+Auth
+
+Laravel Sanctum
+
+Token-based SPA auth
+
+Offline
+
+Dexie.js (IndexedDB)
+
+Local DB POS Offline
+
+Realtime
+
+Laravel Echo + Soketi
+
+Notifikasi real-time
+
+Icons
+
+Lucide React
+
+Sidebar dan UI icons
+
+Testing
+
+PHPUnit/Pest + Vitest
+
+BE + FE testing
+
+
+3.2 Service-Repository Pattern
+
+Request -&gt; Controller (Form Request validation)
+
+  -&gt; Service (business logic, WAC calc, notifications)
+
+    -&gt; Repository (abstraksi data access)
+
+      -&gt; Eloquent Model -&gt; MySQL
+
+
+
+Response: MySQL -&gt; Model -&gt; Repository -&gt; Service -&gt; Controller
+
+  -&gt; Inertia::render(&apos;Pages/Screen&apos;, [&apos;props&apos; =&gt; $data])
+
+  -&gt; React component re-render
+
+
+3.3 Folder Structure
+
+app/Http/Controllers/   | app/Services/ (19)   | app/Repositories/ (15)
+
+app/Http/Middleware/     | app/Events/ (9)      | app/Listeners/ (12)
+
+app/Http/Requests/      | app/Models/ (23)     | app/Notifications/
+
+app/Enums/              | database/migrations/ (23)
+
+
+
+resources/js/Pages/ (26) | resources/js/Components/ | resources/js/Layouts/
+
+resources/js/Hooks/      | resources/js/Lib/        | resources/js/Config/
+
+
+3.4 LocationScope Middleware
+
+Auto-inject WHERE location_id = auth()-&gt;user()-&gt;location_id untuk Stockist, Kasir, Admin. Owner (location_id = NULL) bypass. Memastikan isolasi data per-toko 100%.
+
+
+3.5 Offline-First POS
+Komponen
+Teknologi
+Fungsi
+
+Local DB
+
+Dexie.js
+
+Katalog, harga, transaksi pending
+
+Service Worker
+
+Workbox
+
+Cache asset agar POS bisa offline
+
+Sync Engine
+
+useOfflineSync hook
+
+Auto-sync saat koneksi pulih
+
+Conflict
+
+Server-wins + timestamp
+
+Server price jadi acuan setelah sync
+
+Dedup
+
+offline_uuid (UUID v4)
+
+Server tolak duplikat
+
+
+
+Bab 4. Skema Database (23 Tabel)
+
+
+4.1 Overview
+
+MASTER (8): locations, users, categories, products, product_units, product_prices, weight_safeguards, suppliers
+
+PROCUREMENT (4): purchase_orders, purchase_order_items, inbounds, inbound_items
+
+SALES (4): shifts, transactions, transaction_items, online_order_details
+
+INVENTORY (7): inventories, stock_mutations, stock_mutation_items, waste_requests, waste_request_items, stock_opnames, stock_opname_items
+
+SYSTEM (2): reorder_points, activity_logs
+
+
+
+RELASI KUNCI:
+
+  locations (1)-(N) users, purchase_orders, inventories
+
+  products (1)-(N) product_prices, inventories, product_units
+
+  inventories: UNIQUE (product_id, location_id) -- 1 baris per produk per toko
+
+  inventories.avg_cost = WAC aktif per toko
+
+  product_prices.hpp_baseline = MAX(avg_cost) semua toko
+
+  transaction_items.hpp_at_sale = snapshot avg_cost saat jual
+
+  inbounds.shipping_cost = ongkir TERPISAH dari HPP
+
+
+4.2 Detail Tabel
+
+Tabel: locations
+
+Data toko.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+name
+
+VARCHAR(100)
+
+NOT NULL
+
+
+
+code
+
+VARCHAR(10)
+
+UNIQUE, NOT NULL
+
+Kode: SRP, KG, BSD
+
+address
+
+TEXT
+
+NULLABLE
+
+
+
+phone
+
+VARCHAR(20)
+
+NULLABLE
+
+
+
+is_active
+
+BOOLEAN
+
+DEFAULT true
+
+
+
+opened_at
+
+DATE
+
+NULLABLE
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: users
+
+Seluruh pengguna.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+name
+
+VARCHAR(100)
+
+NOT NULL
+
+
+
+username
+
+VARCHAR(50)
+
+UNIQUE, NOT NULL
+
+
+
+password
+
+VARCHAR(255)
+
+NOT NULL
+
+bcrypt
+
+role
+
+ENUM(owner,stockist,kasir,admin)
+
+NOT NULL
+
+
+
+location_id
+
+BIGINT UNSIGNED
+
+FK locations, NULLABLE
+
+NULL=Owner
+
+is_active
+
+BOOLEAN
+
+DEFAULT true
+
+
+
+last_login_at
+
+TIMESTAMP
+
+NULLABLE
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: categories
+
+Kategori buah.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+name
+
+VARCHAR(100)
+
+UNIQUE, NOT NULL
+
+
+
+description
+
+TEXT
+
+NULLABLE
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: products
+
+Katalog utama buah.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+category_id
+
+BIGINT UNSIGNED
+
+FK categories
+
+
+
+name
+
+VARCHAR(150)
+
+UNIQUE, NOT NULL
+
+
+
+sku
+
+VARCHAR(50)
+
+UNIQUE, NOT NULL
+
+Auto-gen
+
+base_uom
+
+VARCHAR(20)
+
+NOT NULL
+
+Pcs/Gram/Kg
+
+image_path
+
+VARCHAR(255)
+
+NULLABLE
+
+
+
+is_active
+
+BOOLEAN
+
+DEFAULT true
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: product_units
+
+Konversi satuan (1 Dus=24 Pcs).
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+product_id
+
+BIGINT UNSIGNED
+
+FK products
+
+
+
+unit_name
+
+VARCHAR(30)
+
+NOT NULL
+
+
+
+conversion_to_base
+
+DECIMAL(10,4)
+
+NOT NULL
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: product_prices
+
+Harga jual (Owner Pricing Engine).
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+product_id
+
+BIGINT UNSIGNED
+
+FK products
+
+
+
+product_unit_id
+
+BIGINT UNSIGNED
+
+FK, NULLABLE
+
+NULL=base_uom
+
+hpp_baseline
+
+DECIMAL(12,2)
+
+NOT NULL
+
+MAX(avg_cost)
+
+hpp_rounded
+
+DECIMAL(12,2)
+
+NOT NULL
+
+Dibulatkan
+
+margin_percent
+
+DECIMAL(5,2)
+
+NOT NULL
+
+
+
+selling_price
+
+DECIMAL(12,2)
+
+NOT NULL
+
+Harga seragam
+
+tier_label
+
+VARCHAR(50)
+
+NULLABLE
+
+Ecer/Grosir
+
+is_locked
+
+BOOLEAN
+
+DEFAULT false
+
+
+
+locked_at
+
+TIMESTAMP
+
+NULLABLE
+
+
+
+locked_by
+
+BIGINT UNSIGNED
+
+FK users, NULLABLE
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: weight_safeguards
+
+Batas berat wajar.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+product_id
+
+BIGINT UNSIGNED
+
+FK, UNIQUE
+
+
+
+min_weight_gram
+
+INT
+
+NOT NULL
+
+
+
+max_weight_gram
+
+INT
+
+NOT NULL
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: suppliers
+
+Data supplier.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+name
+
+VARCHAR(150)
+
+NOT NULL
+
+
+
+contact_person
+
+VARCHAR(100)
+
+NULLABLE
+
+
+
+phone
+
+VARCHAR(20)
+
+NULLABLE
+
+
+
+address
+
+TEXT
+
+NULLABLE
+
+
+
+is_active
+
+BOOLEAN
+
+DEFAULT true
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: purchase_orders
+
+PO per toko ke supplier.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+po_number
+
+VARCHAR(30)
+
+UNIQUE, NOT NULL
+
+PO-{CODE}-YYYYMMDD-XXXX
+
+supplier_id
+
+BIGINT UNSIGNED
+
+FK suppliers
+
+
+
+location_id
+
+BIGINT UNSIGNED
+
+FK locations, NOT NULL
+
+Toko pembuat
+
+created_by
+
+BIGINT UNSIGNED
+
+FK users
+
+
+
+order_date
+
+DATE
+
+NOT NULL
+
+
+
+status
+
+ENUM(draft,confirmed,partially_received,completed,cancelled)
+
+DEFAULT draft
+
+
+
+notes
+
+TEXT
+
+NULLABLE
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: purchase_order_items
+
+Item per PO.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+purchase_order_id
+
+BIGINT UNSIGNED
+
+FK
+
+
+
+product_id
+
+BIGINT UNSIGNED
+
+FK products
+
+
+
+product_unit_id
+
+BIGINT UNSIGNED
+
+FK product_units
+
+
+
+quantity_ordered
+
+DECIMAL(10,2)
+
+NOT NULL
+
+
+
+estimated_price
+
+DECIMAL(12,2)
+
+NULLABLE
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: inbounds
+
+Penerimaan barang ke toko.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+inbound_number
+
+VARCHAR(30)
+
+UNIQUE, NOT NULL
+
+INB-{CODE}-YYYYMMDD-XXXX
+
+purchase_order_id
+
+BIGINT UNSIGNED
+
+FK
+
+
+
+received_by
+
+BIGINT UNSIGNED
+
+FK users
+
+
+
+location_id
+
+BIGINT UNSIGNED
+
+FK locations, NOT NULL
+
+Toko penerima
+
+received_date
+
+DATE
+
+NOT NULL
+
+
+
+shipping_cost
+
+DECIMAL(12,2)
+
+DEFAULT 0
+
+Ongkir TERPISAH HPP
+
+notes
+
+TEXT
+
+NULLABLE
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: inbound_items
+
+Detail per inbound, trigger WAC.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+inbound_id
+
+BIGINT UNSIGNED
+
+FK inbounds
+
+
+
+product_id
+
+BIGINT UNSIGNED
+
+FK products
+
+
+
+product_unit_id
+
+BIGINT UNSIGNED
+
+FK
+
+
+
+quantity_received
+
+DECIMAL(10,2)
+
+NOT NULL
+
+
+
+total_buy_price
+
+DECIMAL(14,2)
+
+NOT NULL
+
+
+
+content_per_unit
+
+INT
+
+NOT NULL
+
+Isi per unit
+
+hpp_raw_calculated
+
+DECIMAL(12,2)
+
+NOT NULL
+
+Catatan historis
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: inventories
+
+Stok + WAC per produk per toko.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+product_id
+
+BIGINT UNSIGNED
+
+FK products
+
+
+
+location_id
+
+BIGINT UNSIGNED
+
+FK locations
+
+
+
+quantity
+
+DECIMAL(12,2)
+
+NOT NULL, DEFAULT 0
+
+Stok base_uom
+
+avg_cost
+
+DECIMAL(12,2)
+
+NOT NULL, DEFAULT 0
+
+WAC per toko
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+
+
+UNIQUE(product_id,location_id)
+
+1 baris/produk/toko
+
+
+
+Tabel: shifts
+
+Sesi shift kasir/admin.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+user_id
+
+BIGINT UNSIGNED
+
+FK users
+
+
+
+location_id
+
+BIGINT UNSIGNED
+
+FK locations
+
+
+
+started_at
+
+TIMESTAMP
+
+NOT NULL
+
+
+
+ended_at
+
+TIMESTAMP
+
+NULLABLE
+
+
+
+opening_balance
+
+DECIMAL(12,2)
+
+NOT NULL
+
+Saldo awal
+
+closing_balance_expected
+
+DECIMAL(12,2)
+
+NULLABLE
+
+Sistem hitung
+
+closing_balance_actual
+
+DECIMAL(12,2)
+
+NULLABLE
+
+Input kasir
+
+difference
+
+DECIMAL(12,2)
+
+NULLABLE
+
+actual-expected
+
+status
+
+ENUM(open,closed)
+
+DEFAULT open
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: transactions
+
+Transaksi penjualan.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+transaction_number
+
+VARCHAR(30)
+
+UNIQUE, NOT NULL
+
+TRX-{CODE}-YYYYMMDD-XXXX
+
+shift_id
+
+BIGINT UNSIGNED
+
+FK shifts
+
+
+
+user_id
+
+BIGINT UNSIGNED
+
+FK users
+
+
+
+location_id
+
+BIGINT UNSIGNED
+
+FK locations
+
+
+
+type
+
+ENUM(offline,online)
+
+NOT NULL
+
+
+
+subtotal
+
+DECIMAL(14,2)
+
+NOT NULL
+
+
+
+discount
+
+DECIMAL(12,2)
+
+DEFAULT 0
+
+
+
+discount_note
+
+TEXT
+
+NULLABLE
+
+Wajib jika discount&gt;0
+
+grand_total
+
+DECIMAL(14,2)
+
+NOT NULL
+
+subtotal-discount
+
+payment_method
+
+ENUM(cash,transfer,ewallet,cod,marketplace)
+
+NOT NULL
+
+
+
+payment_amount
+
+DECIMAL(14,2)
+
+NOT NULL
+
+
+
+change_amount
+
+DECIMAL(12,2)
+
+DEFAULT 0
+
+
+
+status
+
+ENUM(completed,held,cancelled)
+
+DEFAULT completed
+
+
+
+is_synced
+
+BOOLEAN
+
+DEFAULT true
+
+false jika offline
+
+offline_uuid
+
+UUID
+
+NULLABLE, UNIQUE
+
+Dedup sync
+
+transacted_at
+
+TIMESTAMP
+
+NOT NULL
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: transaction_items
+
+Detail item transaksi.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+transaction_id
+
+BIGINT UNSIGNED
+
+FK
+
+
+
+product_id
+
+BIGINT UNSIGNED
+
+FK products
+
+
+
+product_unit_id
+
+BIGINT UNSIGNED
+
+FK, NULLABLE
+
+
+
+quantity
+
+DECIMAL(10,4)
+
+NOT NULL
+
+
+
+weight_gram
+
+INT
+
+NULLABLE
+
+Jika curah
+
+unit_price
+
+DECIMAL(12,2)
+
+NOT NULL
+
+Harga saat jual
+
+hpp_at_sale
+
+DECIMAL(12,2)
+
+NOT NULL
+
+Snapshot avg_cost
+
+subtotal
+
+DECIMAL(14,2)
+
+NOT NULL
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: online_order_details
+
+Data tambahan transaksi online (1:1).
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+transaction_id
+
+BIGINT UNSIGNED
+
+FK, UNIQUE
+
+
+
+customer_name
+
+VARCHAR(100)
+
+NOT NULL
+
+
+
+customer_phone
+
+VARCHAR(20)
+
+NULLABLE
+
+
+
+customer_address
+
+TEXT
+
+NULLABLE
+
+
+
+platform
+
+ENUM(whatsapp,grab,shopee,gofood,tokopedia,other)
+
+NOT NULL
+
+
+
+courier_name
+
+VARCHAR(100)
+
+NULLABLE
+
+
+
+delivery_method
+
+VARCHAR(50)
+
+NULLABLE
+
+
+
+shipping_cost
+
+DECIMAL(10,2)
+
+DEFAULT 0
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: stock_mutations
+
+Mutasi horizontal antar-toko.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+mutation_number
+
+VARCHAR(30)
+
+UNIQUE, NOT NULL
+
+MUT-{CODE}-YYYYMMDD-XXXX
+
+from_location_id
+
+BIGINT UNSIGNED
+
+FK locations
+
+
+
+to_location_id
+
+BIGINT UNSIGNED
+
+FK locations
+
+
+
+created_by
+
+BIGINT UNSIGNED
+
+FK users
+
+
+
+received_by
+
+BIGINT UNSIGNED
+
+FK users, NULLABLE
+
+
+
+status
+
+ENUM(preparing,shipped,received,completed)
+
+DEFAULT preparing
+
+
+
+shipped_at
+
+TIMESTAMP
+
+NULLABLE
+
+
+
+received_at
+
+TIMESTAMP
+
+NULLABLE
+
+
+
+notes
+
+TEXT
+
+NULLABLE
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: stock_mutation_items
+
+Item per mutasi.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+stock_mutation_id
+
+BIGINT UNSIGNED
+
+FK
+
+
+
+product_id
+
+BIGINT UNSIGNED
+
+FK products
+
+
+
+product_unit_id
+
+BIGINT UNSIGNED
+
+FK
+
+
+
+quantity_sent
+
+DECIMAL(10,2)
+
+NOT NULL
+
+
+
+quantity_received
+
+DECIMAL(10,2)
+
+NULLABLE
+
+
+
+loss_quantity
+
+DECIMAL(10,2)
+
+NULLABLE
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: waste_requests
+
+Pengajuan waste (two-step approval).
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+request_number
+
+VARCHAR(30)
+
+UNIQUE, NOT NULL
+
+
+
+location_id
+
+BIGINT UNSIGNED
+
+FK locations
+
+
+
+requested_by
+
+BIGINT UNSIGNED
+
+FK users
+
+
+
+approved_by
+
+BIGINT UNSIGNED
+
+FK users, NULLABLE
+
+
+
+status
+
+ENUM(pending,approved,rejected)
+
+DEFAULT pending
+
+
+
+rejection_reason
+
+TEXT
+
+NULLABLE
+
+
+
+approved_at
+
+TIMESTAMP
+
+NULLABLE
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: waste_request_items
+
+Item per waste.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+waste_request_id
+
+BIGINT UNSIGNED
+
+FK
+
+
+
+product_id
+
+BIGINT UNSIGNED
+
+FK products
+
+
+
+quantity
+
+DECIMAL(10,2)
+
+NOT NULL
+
+
+
+reason
+
+ENUM(rotten,damaged,expired,failed_qc)
+
+NOT NULL
+
+
+
+photo_path
+
+VARCHAR(255)
+
+NOT NULL
+
+Wajib
+
+hpp_value
+
+DECIMAL(12,2)
+
+NOT NULL
+
+qty x avg_cost
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: stock_opnames
+
+Sesi stock opname per toko.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+opname_number
+
+VARCHAR(30)
+
+UNIQUE, NOT NULL
+
+
+
+location_id
+
+BIGINT UNSIGNED
+
+FK locations
+
+
+
+conducted_by
+
+BIGINT UNSIGNED
+
+FK users
+
+
+
+approved_by
+
+BIGINT UNSIGNED
+
+FK users, NULLABLE
+
+
+
+opname_date
+
+DATE
+
+NOT NULL
+
+
+
+status
+
+ENUM(in_progress,submitted,approved)
+
+DEFAULT in_progress
+
+
+
+total_shrinkage_value
+
+DECIMAL(14,2)
+
+NULLABLE
+
+
+
+approved_at
+
+TIMESTAMP
+
+NULLABLE
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: stock_opname_items
+
+Item per opname.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+stock_opname_id
+
+BIGINT UNSIGNED
+
+FK
+
+
+
+product_id
+
+BIGINT UNSIGNED
+
+FK products
+
+
+
+system_quantity
+
+DECIMAL(12,2)
+
+NOT NULL
+
+Snapshot
+
+physical_quantity
+
+DECIMAL(12,2)
+
+NOT NULL
+
+Hasil hitung
+
+difference
+
+DECIMAL(12,2)
+
+NOT NULL
+
+physical-system
+
+shrinkage_value
+
+DECIMAL(12,2)
+
+NULLABLE
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+Tabel: reorder_points
+
+Threshold minimum stok.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+product_id
+
+BIGINT UNSIGNED
+
+FK products
+
+
+
+location_id
+
+BIGINT UNSIGNED
+
+FK locations
+
+
+
+min_quantity
+
+DECIMAL(12,2)
+
+NOT NULL
+
+
+
+set_by
+
+BIGINT UNSIGNED
+
+FK users
+
+
+
+is_active
+
+BOOLEAN
+
+DEFAULT true
+
+
+
+last_notified_at
+
+TIMESTAMP
+
+NULLABLE
+
+Cooldown
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+updated_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+
+
+UNIQUE(product_id,location_id)
+
+
+
+
+
+Tabel: activity_logs
+
+Audit trail.
+Kolom
+Tipe Data
+Constraint
+Keterangan
+
+id
+
+BIGINT UNSIGNED
+
+PK, AI
+
+
+
+user_id
+
+BIGINT UNSIGNED
+
+FK users
+
+
+
+action
+
+VARCHAR(50)
+
+NOT NULL
+
+
+
+entity_type
+
+VARCHAR(50)
+
+NOT NULL
+
+
+
+entity_id
+
+BIGINT UNSIGNED
+
+NULLABLE
+
+
+
+description
+
+TEXT
+
+NULLABLE
+
+
+
+ip_address
+
+VARCHAR(45)
+
+NULLABLE
+
+
+
+created_at
+
+TIMESTAMP
+
+
+
+
+
+
+
+
+
+Bab 5. Keputusan Desain Arsitektural (10 KD)
+
+Semua KD berstatus LOCKED. Tidak dapat diubah tanpa Change Request formal.
+KD
+Keputusan
+Alasan
+
+KD-01
+
+WAC: avg_cost = ((stok_lama x cost_lama) + (stok_baru x hpp_baru)) / total
+
+Buah homogen. 1 angka HPP/produk/toko.
+
+KD-02
+
+Harga TIDAK auto-adjust saat HPP berubah. Owner manual.
+
+Sensitivitas harga pelanggan tinggi.
+
+KD-03
+
+Decentralized Store. Tidak ada gudang pusat.
+
+Sesuai realita operasional.
+
+KD-04
+
+hpp_baseline = MAX(avg_cost) semua toko. Harga seragam.
+
+Menjamin margin minimum di toko termahal.
+
+KD-05
+
+Setiap toko WAJIB 1 Stockist + 1 Kasir + 1 Admin.
+
+Operasi lengkap per toko.
+
+KD-06
+
+Supplier tunggal, beda alamat kirim.
+
+avg_cost beda karena timing reorder saja.
+
+KD-07
+
+Ongkir terpisah dari HPP. Biaya operasional.
+
+Menjaga kesederhanaan kalkulasi HPP.
+
+KD-08
+
+Diskon: approval di luar sistem. Catat nilai + catatan wajib.
+
+Bisnis kecil, approval formal terlalu heavy.
+
+KD-09
+
+Retur pelanggan: di luar scope.
+
+POS Online hanya lokal. Risiko retur minimal.
+
+KD-10
+
+Reorder point: per produk/toko, real-time listener, cooldown 1 jam.
+
+Buah fast-moving, cron harian terlambat.
+
+
+5.1 Detail WAC
+
+avg_cost = ((stok_lama x avg_cost_lama) + (stok_baru x hpp_mentah)) / total_stok
+
+
+
+Contoh: Lama 200 Pcs x Rp 9.000 + Baru 200 Pcs x Rp 11.000 = Rp 10.000/Pcs
+
+
+
+WAC BERUBAH: Inbound baru, Mutasi diterima di tujuan
+
+WAC TIDAK BERUBAH: Penjualan, Waste, Opname (qty berubah, cost tetap)
+
+
+5.2 Detail hpp_baseline
+
+hpp_baseline = MAX(avg_cost) dari semua toko dengan stok &gt; 0
+
+Owner set margin% dari hpp_baseline. Harga jual seragam.
+
+
+
+Contoh: Serpong Rp 9.000, BSD Rp 11.000, KG Rp 9.500
+
+hpp_baseline = Rp 11.000, margin 30% = selling_price Rp 14.300
+
+Margin aktual: Serpong 37%, BSD 23%, KG 34%
+
+
+5.3 Detail Reorder Point
+
+TRIGGER: TransactionCompleted, WasteApproved, MutationShipped
+
+  -&gt; DeductInventory -&gt; CheckReorderPoint
+
+
+
+LOGIC: Jika qty &lt; min_quantity DAN last_notified_at &gt; 1 jam lalu:
+
+  -&gt; Notif ke Stockist toko + alert Owner + update last_notified_at
+
+
+5.4 Struktur Laba-Rugi
+
+Revenue -- Diskon -- COGS (hpp_at_sale x qty) = Laba Kotor
+
+Laba Kotor -- Ongkir -- Waste -- Mutasi Loss = Laba Operasional
+
+
+
+Bab 6. Functional Requirements (105 FR)
+
+
+6.1 M-01: Data Master (8 FR)
+ID
+Requirement
+Priority
+Aktor
+
+FR-101
+
+Stockist CRUD data buah.
+
+High
+
+Stockist
+
+FR-102
+
+Nama buah unik (case-insensitive).
+
+High
+
+System
+
+FR-103
+
+Wajib minimal 1 Base UoM.
+
+High
+
+Stockist
+
+FR-104
+
+Tambah konversi satuan kapan saja.
+
+High
+
+Stockist
+
+FR-105
+
+Dialog konfirmasi saat ubah UoM.
+
+Medium
+
+System
+
+FR-106
+
+Buah dengan transaksi: nonaktif saja, tidak hapus.
+
+High
+
+System
+
+FR-107
+
+CRUD kategori independen.
+
+Medium
+
+Stockist
+
+FR-108
+
+Upload foto: JPG/PNG, maks 2MB.
+
+Low
+
+Stockist
+
+
+
+
+6.2 M-02: Pengadaan &amp; Inbound (10 FR)
+ID
+Requirement
+Priority
+Aktor
+
+FR-201
+
+PO untuk TOKO SENDIRI (LocationScope).
+
+High
+
+Stockist
+
+FR-202
+
+No. PO: PO-{CODE}-YYYYMMDD-XXXX.
+
+High
+
+System
+
+FR-203
+
+PO draft bisa edit, confirmed tidak.
+
+High
+
+System
+
+FR-204
+
+Inbound: input qty + harga beli.
+
+High
+
+Stockist
+
+FR-205
+
+HPP Mentah = total_buy_price/(qty x content).
+
+Critical
+
+System
+
+FR-206
+
+WAC update di inventories TOKO penerima.
+
+Critical
+
+System
+
+FR-207
+
+Rumus WAC: ((lama x cost)+(baru x hpp))/total.
+
+Critical
+
+System
+
+FR-208
+
+Qty inbound &lt;= PO.
+
+Medium
+
+System
+
+FR-209
+
+Stok toko bertambah otomatis.
+
+Critical
+
+System
+
+FR-210
+
+Notifikasi HPP delta ke Owner.
+
+High
+
+System
+
+
+
+
+6.3 M-03: Pricing Engine (10 FR)
+ID
+Requirement
+Priority
+Aktor
+
+FR-301
+
+Owner lihat produk: Pending/Locked.
+
+High
+
+Owner
+
+FR-302
+
+Input margin%. Preview harga real-time.
+
+Critical
+
+Owner
+
+FR-303
+
+Tabel avg_cost per toko. hpp_baseline=MAX.
+
+Critical
+
+System
+
+FR-304
+
+HPP Dibulatkan untuk harga bersih.
+
+High
+
+Owner
+
+FR-305
+
+Multi-tier pricing (Ecer, Grosir).
+
+High
+
+Owner
+
+FR-306
+
+Lock harga sebelum tayang.
+
+Critical
+
+Owner
+
+FR-307
+
+Produk tanpa lock TIDAK muncul di POS.
+
+Critical
+
+System
+
+FR-308
+
+Harga real-time di semua toko setelah lock.
+
+High
+
+System
+
+FR-309
+
+Harga TIDAK auto-adjust saat WAC berubah.
+
+Critical
+
+System
+
+FR-310
+
+Notifikasi HPP delta ke Owner.
+
+High
+
+System
+
+
+
+
+6.4 M-04: POS Offline (13 FR)
+ID
+Requirement
+Priority
+Aktor
+
+FR-401
+
+Buka shift + saldo awal.
+
+High
+
+Kasir
+
+FR-402
+
+Tampilkan katalog aktif + harga locked.
+
+Critical
+
+System
+
+FR-403
+
+Search + filter kategori.
+
+High
+
+Kasir
+
+FR-404
+
+Input gramasi manual untuk curah.
+
+High
+
+Kasir
+
+FR-405
+
+Safeguard: tolak berat di luar range.
+
+High
+
+System
+
+FR-406
+
+Hold dan Resume transaksi.
+
+Medium
+
+Kasir
+
+FR-407
+
+Hitung kembalian otomatis (cash).
+
+High
+
+System
+
+FR-408
+
+Struk digital + cetak browser.
+
+Medium
+
+System
+
+FR-409
+
+POS offline penuh (Dexie.js).
+
+Critical
+
+System
+
+FR-410
+
+Auto-sync + dedup via offline_uuid.
+
+Critical
+
+System
+
+FR-411
+
+Tutup shift: saldo aktual, selisih.
+
+High
+
+Kasir
+
+FR-412
+
+hpp_at_sale = snapshot avg_cost.
+
+Critical
+
+System
+
+FR-413
+
+HPP/margin TIDAK ditampilkan.
+
+Critical
+
+System
+
+
+
+
+6.5 M-05: POS Online (6 FR)
+ID
+Requirement
+Priority
+Aktor
+
+FR-501
+
+Admin buat transaksi + data pelanggan.
+
+High
+
+Admin
+
+FR-502
+
+Pilih platform asal pesanan.
+
+High
+
+Admin
+
+FR-503
+
+Catat kurir, metode kirim, ongkir.
+
+High
+
+Admin
+
+FR-504
+
+Metode bayar: Transfer/e-Wallet/COD/Marketplace.
+
+High
+
+Admin
+
+FR-505
+
+Label &apos;Penjualan Online&apos; di laporan.
+
+High
+
+System
+
+FR-506
+
+HPP/margin TIDAK ditampilkan.
+
+Critical
+
+System
+
+
+
+
+6.6 M-06: Mutasi Stok (5 FR)
+ID
+Requirement
+Priority
+Aktor
+
+FR-601
+
+Mutasi dari TOKO SENDIRI ke toko lain.
+
+High
+
+Stockist
+
+FR-602
+
+Status: Preparing &gt; Shipped &gt; Received &gt; Completed.
+
+High
+
+System
+
+FR-603
+
+Shipped: stok asal -, avg_cost asal TIDAK berubah.
+
+Critical
+
+System
+
+FR-604
+
+Received: stok tujuan +, WAC recalc di tujuan.
+
+Critical
+
+System
+
+FR-605
+
+Selisih qty = Mutasi Loss, lapor Owner.
+
+High
+
+System
+
+
+
+
+6.7 M-07: Waste (6 FR)
+ID
+Requirement
+Priority
+Aktor
+
+FR-701
+
+Stockist ajukan: item, qty, alasan, foto WAJIB.
+
+High
+
+Stockist
+
+FR-702
+
+Pending TIDAK potong stok.
+
+Critical
+
+System
+
+FR-703
+
+Notifikasi waste ke Owner + foto.
+
+High
+
+System
+
+FR-704
+
+Approve: stok potong, value=qty x avg_cost.
+
+Critical
+
+Owner
+
+FR-705
+
+Reject: stok tetap, alasan dicatat.
+
+High
+
+Owner
+
+FR-706
+
+Riwayat waste untuk analisis tren.
+
+Medium
+
+System
+
+
+
+
+6.8 M-08: Opname (6 FR)
+ID
+Requirement
+Priority
+Aktor
+
+FR-801
+
+Mulai sesi: snapshot stok + avg_cost.
+
+High
+
+Stockist
+
+FR-802
+
+Input jumlah fisik per item.
+
+High
+
+Stockist
+
+FR-803
+
+Hitung selisih dan nilai penyusutan.
+
+High
+
+System
+
+FR-804
+
+Laporan selisih ke Owner.
+
+High
+
+System
+
+FR-805
+
+Owner approve: stok adjust. avg_cost TETAP.
+
+Critical
+
+Owner
+
+FR-806
+
+Audit trail: siapa hitung, siapa approve.
+
+High
+
+System
+
+
+
+
+6.9 M-09: Dashboard &amp; Laporan (7 FR)
+ID
+Requirement
+Priority
+Aktor
+
+FR-901
+
+Dashboard KPI: Revenue, Laba, Transaksi, Waste, Low Stock.
+
+High
+
+Owner
+
+FR-902
+
+Laba-rugi: Revenue - COGS - Ongkir - Waste - Loss.
+
+High
+
+Owner
+
+FR-903
+
+Penjualan per kanal: Offline per toko vs Online per platform.
+
+High
+
+Owner
+
+FR-904
+
+Stok real-time + avg_cost per toko. Filter low stock.
+
+High
+
+Owner
+
+FR-905
+
+Tren waste per item per bulan.
+
+Medium
+
+Owner
+
+FR-906
+
+Shift per kasir: transaksi, penjualan, selisih.
+
+High
+
+Owner
+
+FR-907
+
+Kasir/Admin hanya lihat shift sendiri.
+
+High
+
+System
+
+
+
+
+6.10 M-10: Manajemen User (5 FR)
+ID
+Requirement
+Priority
+Aktor
+
+FR-1001
+
+Owner CRUD akun + role + toko.
+
+High
+
+Owner
+
+FR-1002
+
+Wajib ganti password login pertama.
+
+High
+
+System
+
+FR-1003
+
+Nonaktifkan tanpa hapus histori.
+
+High
+
+Owner
+
+FR-1004
+
+Audit log: login, create, update, approve.
+
+High
+
+System
+
+FR-1005
+
+Session timeout 30 menit.
+
+Medium
+
+System
+
+
+
+
+6.11 M-11: Manajemen Toko (8 FR)
+ID
+Requirement
+Priority
+Aktor
+
+FR-1101
+
+Owner buat toko: Nama, Kode, Alamat, Telp, Tanggal.
+
+High
+
+Owner
+
+FR-1102
+
+Kode toko untuk auto-gen nomor dokumen.
+
+High
+
+System
+
+FR-1103
+
+Setelah buat toko, wajib buat min 3 staff.
+
+High
+
+Owner
+
+FR-1104
+
+Validasi: toko aktif harus 1 Stockist+1 Kasir+1 Admin.
+
+High
+
+System
+
+FR-1105
+
+Nonaktifkan toko. Data historis tetap.
+
+Medium
+
+Owner
+
+FR-1106
+
+List toko: staff, revenue, status.
+
+High
+
+Owner
+
+FR-1107
+
+Edit info toko tanpa ubah kode.
+
+Medium
+
+Owner
+
+FR-1108
+
+Kode toko immutable setelah dibuat.
+
+High
+
+System
+
+
+
+
+6.12 Diskon (6 FR)
+ID
+Requirement
+Priority
+Aktor
+
+FR-1201
+
+Kasir/Admin input diskon (Rp) di POS.
+
+High
+
+Kasir/Admin
+
+FR-1202
+
+discount&gt;0: discount_note WAJIB.
+
+High
+
+System
+
+FR-1203
+
+grand_total = subtotal - discount. Diskon &lt;= subtotal.
+
+High
+
+System
+
+FR-1204
+
+Diskon dicatat, bisa diaudit Owner.
+
+High
+
+System
+
+FR-1205
+
+Laporan diskon: per toko/staff/periode.
+
+High
+
+Owner
+
+FR-1206
+
+TIDAK ada approval diskon built-in.
+
+Medium
+
+System
+
+
+
+
+6.13 Reorder Point (9 FR)
+ID
+Requirement
+Priority
+Aktor
+
+FR-1207
+
+Stockist set min stok untuk TOKO-NYA.
+
+High
+
+Stockist
+
+FR-1208
+
+Owner set/override untuk TOKO MANAPUN.
+
+High
+
+Owner
+
+FR-1209
+
+Threshold dalam base_uom.
+
+High
+
+System
+
+FR-1210
+
+UNIQUE per product per location.
+
+High
+
+System
+
+FR-1211
+
+Cek REAL-TIME setiap stok berkurang.
+
+Critical
+
+System
+
+FR-1212
+
+Notif ke Stockist toko jika stok &lt; min.
+
+High
+
+System
+
+FR-1213
+
+Alert di dashboard Owner.
+
+High
+
+System
+
+FR-1214
+
+Cooldown 1 jam per produk per toko.
+
+Medium
+
+System
+
+FR-1215
+
+Toggle aktif/nonaktif threshold.
+
+Medium
+
+Stockist/Owner
+
+
+
+
+6.14 Ongkir &amp; Supplier (3 FR)
+ID
+Requirement
+Priority
+Aktor
+
+FR-1216
+
+Input ongkir saat inbound. Default 0.
+
+Medium
+
+Stockist
+
+FR-1217
+
+Ongkir TIDAK masuk HPP/WAC.
+
+Critical
+
+System
+
+FR-1218
+
+Total ongkir per periode di laporan.
+
+High
+
+System
+
+
+
+
+6.15 Laporan Baru (2 FR)
+ID
+Requirement
+Priority
+Aktor
+
+FR-1111
+
+Perbandingan HPP antar-toko per produk.
+
+High
+
+Owner
+
+FR-1112
+
+Dashboard toko: list, staff, revenue, status.
+
+High
+
+Owner
+
+
+
+
+6.16 LocationScope (2 FR)
+ID
+Requirement
+Priority
+Aktor
+
+FR-1109
+
+PO hanya untuk toko sendiri (LocationScope).
+
+High
+
+System
+
+FR-1110
+
+Inbound langsung ke toko. Tidak ada transit.
+
+High
+
+System
+
+
+
+
+
+Bab 7. Use Case (22 UC)
+
+
+7.1 Ringkasan
+UC
+Nama
+Aktor
+Post-Condition
+
+UC-01
+
+Set margin &amp; lock price
+
+Owner
+
+Harga locked, tayang POS
+
+UC-02
+
+Approve/reject waste
+
+Owner
+
+Stok potong/tetap
+
+UC-03
+
+Approve opname
+
+Owner
+
+Stok adjust, avg_cost tetap
+
+UC-04
+
+View dashboard
+
+Owner
+
+KPI, notifikasi, alerts
+
+UC-05
+
+Manage users
+
+Owner
+
+Staff CRUD + role + toko
+
+UC-06
+
+HPP delta notification
+
+Owner
+
+Owner aware, keputusan pricing
+
+UC-07
+
+Manage master data
+
+Stockist
+
+CRUD produk/kategori/supplier
+
+UC-08
+
+Create PO
+
+Stockist
+
+PO draft/confirmed
+
+UC-09
+
+Process inbound + WAC
+
+Stockist
+
+Stok +, WAC update, Owner notified
+
+UC-10
+
+Create mutation
+
+Stockist
+
+Mutasi 4-tahap status
+
+UC-11
+
+Submit waste
+
+Stockist
+
+Waste pending + foto
+
+UC-12
+
+Execute opname
+
+Stockist
+
+Selisih + submit Owner
+
+UC-13
+
+Open/close shift
+
+Kasir/Admin
+
+Shift aktif/closed, selisih
+
+UC-14
+
+Process offline trx
+
+Kasir
+
+Trx, stok -, hpp_at_sale snapshot
+
+UC-15
+
+Hold/resume trx
+
+Kasir
+
+Keranjang tersimpan temporary
+
+UC-16
+
+Offline sync
+
+Kasir
+
+Pending trx synced via UUID
+
+UC-17
+
+Process online order
+
+Admin
+
+Trx online + pelanggan + kurir
+
+UC-18
+
+Record delivery
+
+Admin
+
+Data pengiriman tersimpan
+
+UC-19
+
+Buat toko baru
+
+Owner
+
+Toko aktif + min 3 staff
+
+UC-20
+
+Berikan diskon
+
+Kasir/Admin
+
+Trx + diskon + catatan
+
+UC-21
+
+Set reorder point
+
+Stockist/Owner
+
+Threshold aktif, cek real-time
+
+UC-22
+
+Auto-alert stok rendah
+
+System
+
+Notif Stockist + alert Owner
+
+
+
+Bab 8. RBAC Matrix
+
+F=Full, V=View, P=Partial, X=No Access
+Fitur
+Owner
+Stockist
+Kasir
+Admin
+
+Data Master CRUD
+
+V
+
+F
+
+X
+
+X
+
+Supplier
+
+V
+
+F
+
+X
+
+X
+
+Purchase Order
+
+V
+
+F
+
+X
+
+X
+
+Inbound
+
+V
+
+F
+
+X
+
+X
+
+Pricing Engine
+
+F
+
+X
+
+X
+
+X
+
+POS Offline
+
+X
+
+X
+
+F
+
+X
+
+POS Online
+
+X
+
+X
+
+X
+
+F
+
+Mutasi Stok
+
+V
+
+F
+
+X
+
+X
+
+Waste Submit
+
+X
+
+F
+
+X
+
+X
+
+Waste Approve
+
+F
+
+X
+
+X
+
+X
+
+Opname Execute
+
+X
+
+F
+
+X
+
+X
+
+Opname Approve
+
+F
+
+X
+
+X
+
+X
+
+Reorder Point
+
+F(override)
+
+F(toko)
+
+X
+
+X
+
+Dashboard Keuangan
+
+F
+
+X
+
+X
+
+X
+
+Laporan Penjualan
+
+F
+
+P(no HPP)
+
+P(shift)
+
+P(shift)
+
+Stok + avg_cost
+
+F
+
+F
+
+X
+
+X
+
+Kelola Toko/User
+
+F
+
+X
+
+X
+
+X
+
+HPP/Margin Visibility
+
+F
+
+X
+
+X
+
+X
+
+Input Diskon
+
+X
+
+X
+
+F
+
+F
+
+
+
+Bab 9. Sitemap &amp; Screen Inventory (26 Screen)
+
+/login                       Semua: Login
+
+
+
+/dashboard                   Owner: Dashboard
+
+/pricing                     Owner: Daftar Harga
+
+/pricing/{id}                Owner: Detail Pricing
+
+/waste                       Owner: Waste Approval  |  Stockist: Waste Request
+
+/reports/profit-loss         Owner: Laba-Rugi
+
+/reports/sales               Owner: Per Kanal
+
+/reports/inventory           Owner: Stok Real-Time
+
+/reports/hpp-comparison      Owner: Perbandingan HPP
+
+/reports/waste               Owner: Lap. Waste
+
+/reports/shifts              Owner: Lap. Shift | Kasir/Admin: Shift Saya
+
+/reports/discounts           Owner: Lap. Diskon
+
+/reports/shipping-costs      Owner: Lap. Ongkir
+
+/stores                      Owner: Kelola Toko
+
+/users                       Owner: Kelola User
+
+
+
+/master/products             Stockist: Master Produk
+
+/master/categories           Stockist: Master Kategori
+
+/master/suppliers            Stockist: Master Supplier
+
+/purchase-orders             Stockist: Purchase Order
+
+/inbounds                    Stockist: Inbound
+
+/mutations                   Stockist: Mutasi Stok
+
+/stock-opname                Stockist: Stock Opname
+
+/reorder-points              Stockist/Owner: Reorder Point
+
+
+
+/pos/offline                 Kasir: POS [sidebar auto-collapse]
+
+/pos/online                  Admin: POS Online
+
+/shifts                      Kasir/Admin: Shift Saya
+
+
+Screen Inventory
+#
+Screen
+Route
+Role
+Modul
+Sprint
+
+01
+
+Login
+
+/login
+
+All
+
+Auth
+
+S1
+
+02
+
+Dashboard
+
+/dashboard
+
+Owner
+
+M-09
+
+S9
+
+03
+
+Pricing list
+
+/pricing
+
+Owner
+
+M-03
+
+S5
+
+04
+
+Pricing detail
+
+/pricing/{id}
+
+Owner
+
+M-03
+
+S5
+
+05
+
+Waste approval
+
+/waste
+
+Owner
+
+M-07
+
+S8
+
+06
+
+Lap. laba-rugi
+
+/reports/profit-loss
+
+Owner
+
+M-09
+
+S9
+
+07
+
+Lap. penjualan
+
+/reports/sales
+
+Owner
+
+M-09
+
+S9
+
+08
+
+Lap. stok
+
+/reports/inventory
+
+Owner
+
+M-09
+
+S9
+
+09
+
+Lap. HPP
+
+/reports/hpp-comparison
+
+Owner
+
+M-09
+
+S9
+
+10
+
+Lap. waste
+
+/reports/waste
+
+Owner
+
+M-09
+
+S9
+
+11
+
+Lap. shift
+
+/reports/shifts
+
+Owner
+
+M-09
+
+S9
+
+12
+
+Lap. diskon
+
+/reports/discounts
+
+Owner
+
+M-09
+
+S9
+
+13
+
+Lap. ongkir
+
+/reports/shipping-costs
+
+Owner
+
+M-09
+
+S9
+
+14
+
+Kelola toko
+
+/stores
+
+Owner
+
+M-11
+
+S2
+
+15
+
+Kelola user
+
+/users
+
+Owner
+
+M-10
+
+S2
+
+16
+
+Master produk
+
+/master/products
+
+Stockist
+
+M-01
+
+S3
+
+17
+
+Master kategori
+
+/master/categories
+
+Stockist
+
+M-01
+
+S3
+
+18
+
+Master supplier
+
+/master/suppliers
+
+Stockist
+
+M-01
+
+S3
+
+19
+
+Purchase order
+
+/purchase-orders
+
+Stockist
+
+M-02
+
+S4
+
+20
+
+Inbound
+
+/inbounds
+
+Stockist
+
+M-02
+
+S4
+
+21
+
+Mutasi stok
+
+/mutations
+
+Stockist
+
+M-06
+
+S8
+
+22
+
+Waste request
+
+/waste
+
+Stockist
+
+M-07
+
+S8
+
+23
+
+Stock opname
+
+/stock-opname
+
+Stockist
+
+M-08
+
+S8
+
+24
+
+Reorder point
+
+/reorder-points
+
+Stockist
+
+M-09
+
+S9
+
+25
+
+POS offline
+
+/pos/offline
+
+Kasir
+
+M-04
+
+S6
+
+26
+
+POS online
+
+/pos/online
+
+Admin
+
+M-05
+
+S7
+
+
+
+Bab 10. Route Specification (~55 routes)
+
+
+10.1 Public
+Method
+Route
+Controller
+Screen
+
+GET
+
+/login
+
+AuthController@showLogin
+
+#01
+
+POST
+
+/login
+
+AuthController@login
+
+redirect
+
+POST
+
+/logout
+
+AuthController@logout
+
+#01
+
+
+10.2 Owner
+Method
+Route
+Controller
+Middleware
+Screen
+
+GET
+
+/dashboard
+
+DashboardController@index
+
+role:owner
+
+#02
+
+GET
+
+/pricing
+
+PricingController@index
+
+role:owner
+
+#03
+
+GET
+
+/pricing/{id}
+
+PricingController@show
+
+role:owner
+
+#04
+
+POST
+
+/pricing/{id}
+
+PricingController@store
+
+role:owner
+
+API #04
+
+PATCH
+
+/pricing/{id}/lock
+
+PricingController@lock
+
+role:owner
+
+API #04
+
+GET
+
+/waste
+
+WasteController@index
+
+role:owner
+
+#05
+
+PATCH
+
+/waste/{id}/approve
+
+WasteController@approve
+
+role:owner
+
+API #05
+
+PATCH
+
+/waste/{id}/reject
+
+WasteController@reject
+
+role:owner
+
+API #05
+
+GET
+
+/reports/profit-loss
+
+ReportController@profitLoss
+
+role:owner
+
+#06
+
+GET
+
+/reports/sales
+
+ReportController@sales
+
+role:owner
+
+#07
+
+GET
+
+/reports/inventory
+
+ReportController@inventory
+
+role:owner
+
+#08
+
+GET
+
+/reports/hpp-comparison
+
+ReportController@hppComparison
+
+role:owner
+
+#09
+
+GET
+
+/reports/waste
+
+ReportController@waste
+
+role:owner
+
+#10
+
+GET
+
+/reports/shifts
+
+ReportController@shifts
+
+role:owner
+
+#11
+
+GET
+
+/reports/discounts
+
+ReportController@discounts
+
+role:owner
+
+#12
+
+GET
+
+/reports/shipping-costs
+
+ReportController@shippingCosts
+
+role:owner
+
+#13
+
+GET
+
+/stores
+
+StoreController@index
+
+role:owner
+
+#14
+
+POST
+
+/stores
+
+StoreController@store
+
+role:owner
+
+API #14
+
+PUT
+
+/stores/{id}
+
+StoreController@update
+
+role:owner
+
+API #14
+
+GET
+
+/users
+
+UserController@index
+
+role:owner
+
+#15
+
+POST
+
+/users
+
+UserController@store
+
+role:owner
+
+API #15
+
+
+10.3 Stockist
+Method
+Route
+Controller
+Middleware
+Screen
+
+GET
+
+/master/products
+
+ProductController@index
+
+role:stockist|owner
+
+#16
+
+POST
+
+/master/products
+
+ProductController@store
+
+role:stockist
+
+API #16
+
+GET
+
+/master/categories
+
+CategoryController@index
+
+role:stockist
+
+#17
+
+GET
+
+/master/suppliers
+
+SupplierController@index
+
+role:stockist
+
+#18
+
+GET
+
+/purchase-orders
+
+POController@index
+
+role:stockist|owner
+
+#19
+
+POST
+
+/purchase-orders
+
+POController@store
+
+role:stockist
+
+API #19
+
+PATCH
+
+/purchase-orders/{id}/confirm
+
+POController@confirm
+
+role:stockist
+
+API #19
+
+GET
+
+/inbounds
+
+InboundController@index
+
+role:stockist|owner
+
+#20
+
+POST
+
+/inbounds
+
+InboundController@store
+
+role:stockist
+
+API #20
+
+GET
+
+/mutations
+
+MutationController@index
+
+role:stockist|owner
+
+#21
+
+POST
+
+/mutations
+
+MutationController@store
+
+role:stockist
+
+API #21
+
+PATCH
+
+/mutations/{id}/ship
+
+MutationController@ship
+
+role:stockist
+
+API #21
+
+PATCH
+
+/mutations/{id}/receive
+
+MutationController@receive
+
+role:stockist
+
+API #21
+
+GET
+
+/waste
+
+WasteController@indexStockist
+
+role:stockist
+
+#22
+
+POST
+
+/waste
+
+WasteController@store
+
+role:stockist
+
+API #22
+
+GET
+
+/stock-opname
+
+OpnameController@index
+
+role:stockist|owner
+
+#23
+
+POST
+
+/stock-opname
+
+OpnameController@store
+
+role:stockist
+
+API #23
+
+GET
+
+/reorder-points
+
+ReorderPointController@index
+
+role:stockist|owner
+
+#24
+
+POST
+
+/reorder-points
+
+ReorderPointController@store
+
+role:stockist|owner
+
+API #24
+
+
+10.4 Kasir &amp; Admin
+Method
+Route
+Controller
+Middleware
+Screen
+
+GET
+
+/pos/offline
+
+POSOfflineController@index
+
+role:kasir
+
+#25
+
+POST
+
+/pos/offline/transaction
+
+POSOfflineController@store
+
+role:kasir
+
+API #25
+
+POST
+
+/pos/offline/sync
+
+POSOfflineController@sync
+
+role:kasir
+
+API #25
+
+GET
+
+/pos/online
+
+POSOnlineController@index
+
+role:admin
+
+#26
+
+POST
+
+/pos/online/transaction
+
+POSOnlineController@store
+
+role:admin
+
+API #26
+
+POST
+
+/shifts/open
+
+ShiftController@open
+
+role:kasir|admin
+
+API
+
+PATCH
+
+/shifts/{id}/close
+
+ShiftController@close
+
+role:kasir|admin
+
+API
+
+GET
+
+/shifts
+
+ShiftController@index
+
+role:kasir|admin
+
+Shift
+
+
+
+Bab 11. Non-Functional Requirements (18 NFR)
+ID
+Kategori
+Requirement
+Metrik
+
+NFR-01
+
+Performa
+
+Response POS &lt; 2 detik
+
+&lt; 2s p95
+
+NFR-02
+
+Performa
+
+Sync offline &lt; 5 menit
+
+&lt; 5min/100trx
+
+NFR-03
+
+Performa
+
+WAC recalculation &lt; 500ms
+
+&lt; 500ms
+
+NFR-04
+
+Keamanan
+
+Password bcrypt cost 12
+
+bcrypt-12
+
+NFR-05
+
+Keamanan
+
+Session timeout 30 menit
+
+30min
+
+NFR-06
+
+Keamanan
+
+HTTPS/TLS 1.2+
+
+TLS 1.2+
+
+NFR-07
+
+Keamanan
+
+CSRF protection semua mutating routes
+
+Laravel
+
+NFR-08
+
+Skalabilitas
+
+Hingga 100+ toko
+
+&lt; 3s query
+
+NFR-09
+
+Skalabilitas
+
+&gt; 1 juta transaksi
+
+&lt; 3s query
+
+NFR-10
+
+Availability
+
+Server uptime 99.5%
+
+99.5%/bulan
+
+NFR-11
+
+Availability
+
+POS Offline 100%
+
+offline-first
+
+NFR-12
+
+Audit
+
+Seluruh CUD di activity_logs
+
+100%
+
+NFR-13
+
+Audit
+
+Soft-delete, retensi 3 tahun
+
+3 tahun
+
+NFR-14
+
+Compatibility
+
+Chrome/Firefox/Safari/Edge 90+
+
+4 browser
+
+NFR-15
+
+Skalabilitas
+
+Tidak ada limit jumlah toko
+
+100+
+
+NFR-16
+
+Isolasi
+
+LocationScope per toko
+
+100%
+
+NFR-17
+
+Performa
+
+hpp_baseline recalc &lt; 500ms
+
+&lt; 500ms
+
+NFR-18
+
+Konsistensi
+
+Harga seragam setelah locked
+
+100%
+
+
+
+Bab 12. Lampiran
+
+
+12.1 Service Classes (19)
+Service
+Tanggung Jawab
+
+ProductService
+
+CRUD produk, validasi unik, toggle, UoM
+
+CategoryService
+
+CRUD kategori
+
+SupplierService
+
+CRUD supplier
+
+PurchaseOrderService
+
+CRUD PO, confirm, LocationScope
+
+InboundService
+
+Receipt, HPP Mentah, WAC calc, update inventories, shipping_cost terpisah
+
+PricingService
+
+hpp_baseline MAX, set margin, lock/unlock, tabel HPP per toko, notif delta
+
+POSOfflineService
+
+Transaksi, safeguard, hpp_at_sale snapshot, diskon+catatan validasi
+
+POSOnlineService
+
+Transaksi online, pelanggan, kurir, diskon
+
+ShiftService
+
+Buka/tutup shift, selisih laci
+
+MutationService
+
+CRUD mutasi, status transitions, WAC recalc di tujuan
+
+WasteService
+
+Submit, approve/reject, potong stok, waste_value
+
+StockOpnameService
+
+Sesi, snapshot, selisih, adjustment (avg_cost tetap)
+
+ReportService
+
+Laba-rugi, per kanal, stok, HPP comparison, waste, shift, diskon, ongkir
+
+UserService
+
+CRUD user, assign role/toko, toggle
+
+StoreService
+
+CRUD toko, validasi kode, validasi staff
+
+ReorderPointService
+
+CRUD threshold, check vs inventories, cooldown, notifikasi
+
+NotificationService
+
+Real-time: inbound, waste, HPP delta, low stock
+
+AuditService
+
+Activity log recording
+
+OfflineSyncService
+
+Dedup + persist transaksi offline via UUID
+
+
+12.2 Repository Interfaces (15)
+Interface
+Implementation
+
+ProductRepositoryInterface
+
+EloquentProductRepository
+
+CategoryRepositoryInterface
+
+EloquentCategoryRepository
+
+SupplierRepositoryInterface
+
+EloquentSupplierRepository
+
+PurchaseOrderRepositoryInterface
+
+EloquentPurchaseOrderRepository
+
+InboundRepositoryInterface
+
+EloquentInboundRepository
+
+ProductPriceRepositoryInterface
+
+EloquentProductPriceRepository
+
+TransactionRepositoryInterface
+
+EloquentTransactionRepository
+
+ShiftRepositoryInterface
+
+EloquentShiftRepository
+
+InventoryRepositoryInterface
+
+EloquentInventoryRepository
+
+MutationRepositoryInterface
+
+EloquentMutationRepository
+
+WasteRepositoryInterface
+
+EloquentWasteRepository
+
+StockOpnameRepositoryInterface
+
+EloquentStockOpnameRepository
+
+UserRepositoryInterface
+
+EloquentUserRepository
+
+ActivityLogRepositoryInterface
+
+EloquentActivityLogRepository
+
+ReorderPointRepositoryInterface
+
+EloquentReorderPointRepository
+
+
+12.3 Event-Listener (9 Events, 12 Listeners)
+Event
+Listener(s)
+Aksi
+
+InboundCreated
+
+RecalculateWAC + SendInboundNotification
+
+WAC per-toko, hpp_baseline check, notif Owner
+
+PriceLocked
+
+SyncPriceToAllBranches
+
+Broadcast harga via Echo
+
+WasteSubmitted
+
+SendWasteNotification
+
+Notif Owner
+
+WasteApproved
+
+DeductInventoryForWaste + CheckReorderPoint
+
+Potong stok + CEK REORDER
+
+MutationShipped
+
+DeductSourceInventory + CheckReorderPoint
+
+Stok asal - + CEK REORDER
+
+MutationReceived
+
+AddDestinationInventory
+
+Stok tujuan + WAC recalc
+
+TransactionCompleted
+
+DeductSalesInventory + CheckReorderPoint
+
+Stok - hpp_at_sale + CEK REORDER
+
+OpnameApproved
+
+AdjustInventoryFromOpname
+
+Qty adjust, avg_cost TETAP
+
+ShiftClosed
+
+CalculateShiftReconciliation
+
+Selisih laci
+
+
+12.4 Ringkasan Total
+Artefak
+Jumlah
+
+Modul
+
+11
+
+Tabel DB
+
+23
+
+Functional Requirements
+
+105
+
+Non-Functional Requirements
+
+18
+
+Use Cases
+
+22
+
+Screens
+
+26
+
+Routes
+
+~55
+
+Services
+
+19
+
+Repositories
+
+15
+
+Events
+
+9
+
+Listeners
+
+12
+
+Keputusan Desain (KD)
+
+10
+
+Sprint
+
+10 (10 minggu)
+
+Tasks
+
+~272
+
+
+
+
+
+
+--- AKHIR DOKUMEN ---
+
+SRS FruityPOS v2.0 Final Consolidated Blueprint
+
+Menggantikan seluruh SRS v1.0, v1.1, v1.2, v1.3
+
+Satu-satunya acuan resmi untuk implementasi.
+
+

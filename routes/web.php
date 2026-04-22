@@ -48,9 +48,25 @@ Route::middleware('auth')->group(function () {
         Route::patch('/users/{user}/toggle', [\App\Http\Controllers\UserController::class, 'toggle'])->name('users.toggle');
     });
 
-    Route::get('/master/products', function () {
-        return Inertia::render('Placeholder', ['title' => 'Master Products']);
-    })->middleware(RoleMiddleware::class . ':owner,stockist')->name('master.products');
+    Route::middleware(RoleMiddleware::class . ':owner,stockist')->group(function () {
+        // Categories
+        Route::get('/master/categories', [\App\Http\Controllers\CategoryController::class, 'index'])->name('categories.index');
+        Route::post('/master/categories', [\App\Http\Controllers\CategoryController::class, 'store'])->name('categories.store');
+        Route::put('/master/categories/{category}', [\App\Http\Controllers\CategoryController::class, 'update'])->name('categories.update');
+        Route::delete('/master/categories/{category}', [\App\Http\Controllers\CategoryController::class, 'destroy'])->name('categories.destroy');
+
+        // Suppliers
+        Route::get('/master/suppliers', [\App\Http\Controllers\SupplierController::class, 'index'])->name('suppliers.index');
+        Route::post('/master/suppliers', [\App\Http\Controllers\SupplierController::class, 'store'])->name('suppliers.store');
+        Route::put('/master/suppliers/{supplier}', [\App\Http\Controllers\SupplierController::class, 'update'])->name('suppliers.update');
+        Route::patch('/master/suppliers/{supplier}/toggle', [\App\Http\Controllers\SupplierController::class, 'toggle'])->name('suppliers.toggle');
+
+        // Products
+        Route::get('/master/products', [\App\Http\Controllers\ProductController::class, 'index'])->name('products.index');
+        Route::post('/master/products', [\App\Http\Controllers\ProductController::class, 'store'])->name('products.store');
+        Route::post('/master/products/{product}', [\App\Http\Controllers\ProductController::class, 'update'])->name('products.update'); // using POST for file upload support (method spoofing later if needed, or stick to post)
+        Route::patch('/master/products/{product}/toggle', [\App\Http\Controllers\ProductController::class, 'toggle'])->name('products.toggle');
+    });
 
     Route::get('/pos/offline', function () {
         return Inertia::render('Placeholder', ['title' => 'POS Offline']);
