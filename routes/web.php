@@ -55,16 +55,27 @@ Route::middleware('auth')->group(function () {
         Route::put('/master/categories/{category}', [\App\Http\Controllers\CategoryController::class, 'update'])->name('categories.update');
         Route::delete('/master/categories/{category}', [\App\Http\Controllers\CategoryController::class, 'destroy'])->name('categories.destroy');
 
+        // UoM
+        Route::get('/master/uoms', [\App\Http\Controllers\UomController::class, 'index'])->name('uoms.index');
+        Route::post('/master/uoms', [\App\Http\Controllers\UomController::class, 'store'])->name('uoms.store');
+        Route::put('/master/uoms/{uom}', [\App\Http\Controllers\UomController::class, 'update'])->name('uoms.update');
+        Route::delete('/master/uoms/{uom}', [\App\Http\Controllers\UomController::class, 'destroy'])->name('uoms.destroy');
+
         // Suppliers
         Route::get('/master/suppliers', [\App\Http\Controllers\SupplierController::class, 'index'])->name('suppliers.index');
+        Route::get('/master/suppliers/create', [\App\Http\Controllers\SupplierController::class, 'create'])->name('suppliers.create');
         Route::post('/master/suppliers', [\App\Http\Controllers\SupplierController::class, 'store'])->name('suppliers.store');
+        Route::get('/master/suppliers/{supplier}/edit', [\App\Http\Controllers\SupplierController::class, 'edit'])->name('suppliers.edit');
         Route::put('/master/suppliers/{supplier}', [\App\Http\Controllers\SupplierController::class, 'update'])->name('suppliers.update');
         Route::patch('/master/suppliers/{supplier}/toggle', [\App\Http\Controllers\SupplierController::class, 'toggle'])->name('suppliers.toggle');
 
         // Products
         Route::get('/master/products', [\App\Http\Controllers\ProductController::class, 'index'])->name('products.index');
+        Route::get('/master/products/preview-sku', [\App\Http\Controllers\ProductController::class, 'previewSku'])->name('products.previewSku');
+        Route::get('/master/products/create', [\App\Http\Controllers\ProductController::class, 'create'])->name('products.create');
         Route::post('/master/products', [\App\Http\Controllers\ProductController::class, 'store'])->name('products.store');
-        Route::post('/master/products/{product}', [\App\Http\Controllers\ProductController::class, 'update'])->name('products.update'); // using POST for file upload support (method spoofing later if needed, or stick to post)
+        Route::get('/master/products/{product}/edit', [\App\Http\Controllers\ProductController::class, 'edit'])->name('products.edit');
+        Route::post('/master/products/{product}', [\App\Http\Controllers\ProductController::class, 'update'])->name('products.update'); // POST for multipart/form-data
         Route::patch('/master/products/{product}/toggle', [\App\Http\Controllers\ProductController::class, 'toggle'])->name('products.toggle');
     });
 

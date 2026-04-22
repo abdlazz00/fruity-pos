@@ -26,16 +26,31 @@ class SupplierController extends Controller
         return inertia('Supplier/Index', ['suppliers' => $suppliers]);
     }
 
+    public function create()
+    {
+        return inertia('Supplier/Form', [
+            'supplier' => null
+        ]);
+    }
+
+    public function edit($id)
+    {
+        $supplier = \App\Models\Supplier::findOrFail($id);
+        return inertia('Supplier/Form', [
+            'supplier' => $supplier
+        ]);
+    }
+
     public function store(SupplierRequest $request)
     {
         $this->supplierService->createSupplier($request->validated());
-        return back()->with('status', 'Supplier berhasil ditambahkan.');
+        return redirect()->route('suppliers.index')->with('status', 'Supplier berhasil ditambahkan.');
     }
 
     public function update(SupplierRequest $request, $id)
     {
         $this->supplierService->updateSupplier($id, $request->validated());
-        return back()->with('status', 'Supplier berhasil diperbarui.');
+        return redirect()->route('suppliers.index')->with('status', 'Supplier berhasil diperbarui.');
     }
 
     public function toggle($id)

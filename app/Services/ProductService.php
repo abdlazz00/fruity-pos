@@ -33,7 +33,7 @@ class ProductService
         }
 
         $this->auditService->logAction('create', $product, $data);
-        return $product->load(['units', 'weightSafeguard']);
+        return $product->load(['units', 'safeguard']);
     }
 
     public function updateProduct($id, array $data, array $units = [], array $safeguard = [])
@@ -49,7 +49,7 @@ class ProductService
         }
 
         $this->auditService->logAction('update', $product, $data);
-        return $product->load(['units', 'weightSafeguard']);
+        return $product->load(['units', 'safeguard']);
     }
 
     public function toggleProduct($id)

@@ -1,19 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 
 export default function Sidebar({ isCollapsed, setCollapsed }) {
     const { auth } = usePage().props;
     const user = auth?.user || {};
     const role = user.role;
+    
+    // State to hold expanded menus by label
+    const [openMenus, setOpenMenus] = useState(['Inventaris']);
+
+    const toggleSubmenu = (label) => {
+        if (openMenus.includes(label)) {
+            setOpenMenus(openMenus.filter(item => item !== label));
+        } else {
+            setOpenMenus([...openMenus, label]);
+        }
+    };
 
     const ownerMenu = [
         { label: 'Dashboard', url: '/dashboard', icon: 'M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z' },
+        { 
+            label: 'Inventaris', 
+            icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
+            submenus: [
+                { label: 'Data Produk', url: '/master/products' },
+                { label: 'Kategori Produk', url: '/master/categories' },
+                { label: 'Satuan Ukur (UoM)', url: '/master/uoms' },
+                { label: 'Data Supplier', url: '/master/suppliers' },
+            ]
+        },
         { label: 'Kelola Toko', url: '/stores', icon: 'M3 21h18 M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16 M9 21v-5a2 2 0 012-2h2a2 2 0 012 2v5' },
-        { label: 'Kelola User', url: '/users', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+        { label: 'Kelola User', url: '/users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
     ];
 
     const stockistMenu = [
-        { label: 'Data Master Produk', url: '/master/products', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
+        { 
+            label: 'Inventaris', 
+            icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
+            submenus: [
+                { label: 'Kategori Produk', url: '/master/categories' },
+                { label: 'Satuan Ukur (UoM)', url: '/master/uoms' },
+                { label: 'Data Produk', url: '/master/products' },
+                { label: 'Data Supplier', url: '/master/suppliers' },
+            ]
+        },
     ];
 
     const kasirMenu = [
@@ -29,6 +59,17 @@ export default function Sidebar({ isCollapsed, setCollapsed }) {
     else if (role === 'stockist') menus = stockistMenu;
     else if (role === 'kasir') menus = kasirMenu;
     else if (role === 'admin') menus = adminMenu;
+
+    // Expand submenus automatically if a child page is active
+    useEffect(() => {
+        menus.forEach(menu => {
+            if (menu.submenus && menu.submenus.some(sub => window.location.pathname.startsWith(sub.url))) {
+                if (!openMenus.includes(menu.label)) {
+                    setOpenMenus(prev => [...prev, menu.label]);
+                }
+            }
+        });
+    }, []);
 
     return (
         <aside className={`fixed top-0 left-0 h-full bg-primary text-white transition-all duration-300 z-50 flex flex-col ${isCollapsed ? 'w-16' : 'w-60'}`}>
@@ -51,15 +92,62 @@ export default function Sidebar({ isCollapsed, setCollapsed }) {
                 </div>
             </div>
 
-            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto w-full overflow-x-hidden">
                 {menus.map((menu, idx) => {
-                    const isActive = window.location.pathname.startsWith(menu.url);
+                    const isParentActive = window.location.pathname === menu.url || (menu.submenus && menu.submenus.some(s => window.location.pathname.startsWith(s.url)));
+                    const isExpanded = openMenus.includes(menu.label);
+
+                    if (menu.submenus) {
+                        return (
+                            <div key={idx} className="space-y-1">
+                                <button
+                                    onClick={() => toggleSubmenu(menu.label)}
+                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+                                        isParentActive ? 'bg-secondary/80 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
+                                    }`}
+                                    title={isCollapsed ? menu.label : ""}
+                                >
+                                    <div className="flex items-center space-x-3">
+                                        <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={menu.icon} />
+                                        </svg>
+                                        {!isCollapsed && <span className="text-sm font-medium">{menu.label}</span>}
+                                    </div>
+                                    {!isCollapsed && (
+                                        <svg className={`w-4 h-4 shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    )}
+                                </button>
+                                
+                                {isExpanded && !isCollapsed && (
+                                    <div className="ml-10 space-y-1 py-1">
+                                        {menu.submenus.map((sub, sIdx) => {
+                                            const isActive = window.location.pathname.startsWith(sub.url);
+                                            return (
+                                                <Link
+                                                    key={sIdx}
+                                                    href={sub.url}
+                                                    className={`block px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                                                        isActive ? 'text-accent font-medium bg-white/5' : 'text-white/60 hover:text-white hover:bg-white/5'
+                                                    }`}
+                                                >
+                                                    {sub.label}
+                                                </Link>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    }
+
                     return (
                         <Link
                             key={idx}
                             href={menu.url}
                             className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-                                isActive ? 'bg-secondary border-l-4 border-accent text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
+                                isParentActive ? 'bg-secondary border-l-4 border-accent text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
                             }`}
                             title={isCollapsed ? menu.label : ""}
                         >

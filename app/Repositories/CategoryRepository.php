@@ -21,7 +21,7 @@ class CategoryRepository implements CategoryRepositoryInterface
 
     public function paginate($perPage = 10)
     {
-        return $this->model->paginate($perPage);
+        return $this->model->withCount('products')->latest()->paginate($perPage);
     }
 
     public function find($id)

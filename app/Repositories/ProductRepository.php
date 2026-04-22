@@ -16,7 +16,7 @@ class ProductRepository implements ProductRepositoryInterface
 
     public function paginate($perPage = 10, $categoryId = null)
     {
-        $query = $this->model->with(['category', 'units', 'weightSafeguard']);
+        $query = $this->model->with(['category', 'units', 'safeguard']);
         
         if ($categoryId) {
             $query->where('category_id', $categoryId);
@@ -27,7 +27,7 @@ class ProductRepository implements ProductRepositoryInterface
 
     public function find($id)
     {
-        return $this->model->with(['category', 'units', 'weightSafeguard'])->findOrFail($id);
+        return $this->model->with(['category', 'units', 'safeguard'])->findOrFail($id);
     }
 
     public function create(array $data)
@@ -51,7 +51,7 @@ class ProductRepository implements ProductRepositoryInterface
 
     public function syncUnits($productId, array $unitsData)
     {
-        $product = $this->model->findOrFail($id ?? $productId);
+        $product = $this->model->findOrFail($productId);
         // Hapus unit lama, ganti baru
         $product->units()->delete();
         
@@ -63,7 +63,7 @@ class ProductRepository implements ProductRepositoryInterface
     public function updateSafeguard($productId, array $safeguardData)
     {
         $product = $this->model->findOrFail($productId);
-        $product->weightSafeguard()->updateOrCreate(
+        $product->safeguard()->updateOrCreate(
             ['product_id' => $productId],
             $safeguardData
         );

@@ -19,20 +19,26 @@ class ProductRequest extends FormRequest
         return [
             'category_id' => 'required|exists:categories,id',
             'name' => 'required|string|max:150|unique:products,name,' . $productId,
-            'sku' => 'required|string|max:50|unique:products,sku,' . $productId,
-            'base_uom' => 'required|string|max:20',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // 2MB max
-            'is_active' => 'boolean',
-            
+            'sku' => 'nullable|string|max:50|unique:products,sku,' . $productId,
+            'description' => 'nullable|string',
+            'type' => 'required|string|in:tunggal,pack',
+            'has_sn' => 'boolean',
+            'status' => 'required|string|in:active,inactive',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+
             // Validation for Product Units
             'units' => 'nullable|array',
-            'units.*.unit_name' => 'required_with:units|string|max:30',
-            'units.*.conversion_to_base' => 'required_with:units|numeric|min:0.0001',
+            'units.*.name' => 'required_with:units|string|max:50',
+            'units.*.conversion_factor' => 'required_with:units|numeric|min:0.0001',
+            'units.*.price_purchase' => 'required_with:units|numeric|min:0',
+            'units.*.price_sales' => 'required_with:units|numeric|min:0',
+            'units.*.is_default' => 'boolean',
 
             // Validation for Weight Safeguard
             'safeguard' => 'nullable|array',
-            'safeguard.min_weight_gram' => 'required_with:safeguard|integer|min:1',
-            'safeguard.max_weight_gram' => 'required_with:safeguard|integer|gt:safeguard.min_weight_gram',
+            'safeguard.limit_value' => 'required_with:safeguard|numeric|min:0',
+            'safeguard.limit_unit' => 'required_with:safeguard|string|in:gram,percentage',
+            'safeguard.action' => 'required_with:safeguard|string|in:warning,block',
         ];
     }
 }
