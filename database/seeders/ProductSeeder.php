@@ -135,7 +135,7 @@ class ProductSeeder extends Seeder
             }
 
             if (!empty($safeguard)) {
-                $product->weightSafeguard()->updateOrCreate(
+                $product->safeguard()->updateOrCreate(
                     ['product_id' => $product->id],
                     $safeguard
                 );
