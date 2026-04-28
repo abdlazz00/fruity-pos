@@ -77,7 +77,37 @@ Route::middleware('auth')->group(function () {
         Route::get('/master/products/{product}/edit', [\App\Http\Controllers\ProductController::class, 'edit'])->name('products.edit');
         Route::post('/master/products/{product}', [\App\Http\Controllers\ProductController::class, 'update'])->name('products.update'); // POST for multipart/form-data
         Route::patch('/master/products/{product}/toggle', [\App\Http\Controllers\ProductController::class, 'toggle'])->name('products.toggle');
+
+        // Purchase Orders
+        Route::get('/procurement/purchase-orders', [\App\Http\Controllers\PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+        Route::get('/procurement/purchase-orders/create', [\App\Http\Controllers\PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
+        Route::post('/procurement/purchase-orders', [\App\Http\Controllers\PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
+        Route::get('/procurement/purchase-orders/{po}', [\App\Http\Controllers\PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
+        Route::get('/procurement/purchase-orders/{po}/edit', [\App\Http\Controllers\PurchaseOrderController::class, 'edit'])->name('purchase-orders.edit');
+        Route::put('/procurement/purchase-orders/{po}', [\App\Http\Controllers\PurchaseOrderController::class, 'update'])->name('purchase-orders.update');
+        Route::patch('/procurement/purchase-orders/{po}/confirm', [\App\Http\Controllers\PurchaseOrderController::class, 'confirm'])->name('purchase-orders.confirm');
+        Route::patch('/procurement/purchase-orders/{po}/cancel', [\App\Http\Controllers\PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
+        Route::delete('/procurement/purchase-orders/{po}', [\App\Http\Controllers\PurchaseOrderController::class, 'destroy'])->name('purchase-orders.destroy');
+
+        // Inbounds
+        Route::get('/procurement/inbounds', [\App\Http\Controllers\InboundController::class, 'index'])->name('inbounds.index');
+        Route::get('/procurement/inbounds/create', [\App\Http\Controllers\InboundController::class, 'create'])->name('inbounds.create');
+        Route::post('/procurement/inbounds', [\App\Http\Controllers\InboundController::class, 'store'])->name('inbounds.store');
+        Route::get('/procurement/inbounds/{inbound}', [\App\Http\Controllers\InboundController::class, 'show'])->name('inbounds.show');
     });
+
+    // Notifications API (all authenticated users)
+    Route::get('/api/notifications', function (Illuminate\Http\Request $request) {
+        return response()->json([
+            'notifications' => $request->user()->notifications()->latest()->take(20)->get(),
+            'unread_count'  => $request->user()->unreadNotifications()->count(),
+        ]);
+    })->name('notifications.index');
+
+    Route::post('/api/notifications/mark-read', function (Illuminate\Http\Request $request) {
+        $request->user()->unreadNotifications->markAsRead();
+        return response()->json(['success' => true]);
+    })->name('notifications.markRead');
 
     Route::get('/pos/offline', function () {
         return Inertia::render('Placeholder', ['title' => 'POS Offline']);

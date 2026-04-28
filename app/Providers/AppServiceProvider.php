@@ -35,6 +35,18 @@ class AppServiceProvider extends ServiceProvider
             \App\Repositories\Contracts\SupplierRepositoryInterface::class,
             \App\Repositories\SupplierRepository::class
         );
+        $this->app->bind(
+            \App\Repositories\Contracts\PurchaseOrderRepositoryInterface::class,
+            \App\Repositories\PurchaseOrderRepository::class
+        );
+        $this->app->bind(
+            \App\Repositories\Contracts\InboundRepositoryInterface::class,
+            \App\Repositories\InboundRepository::class
+        );
+        $this->app->bind(
+            \App\Repositories\Contracts\InventoryRepositoryInterface::class,
+            \App\Repositories\InventoryRepository::class
+        );
     }
 
     /**
