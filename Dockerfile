@@ -1,20 +1,5 @@
-*(Perintah ini akan membuat file SQLite, menjalankan migrasi tabel POS kamu, mengisi data seeder, lalu menyalakan server Apache).*
-
-### Langkah 5: Klik Deploy!
-Klik tombol **Create Web Service**. 
-Tunggu sekitar 5-10 menit. Render akan memproses `Dockerfile`, menginstal PHP dan Node.js, serta mem-*build* file React/Vite kamu. 
-
-Kalau indikatornya sudah hijau, URL demo Fruity POS kamu sudah siap dikunjungi! Kalau aplikasinya *loading* agak lama saat pertama kali dibuka, itu wajar karena versi gratis Render akan "tidur" jika tidak adaSiapp, kita gaskan pakai Render! Pilihan yang oke karena *dashboard*-nya sangat rapi dan gampang dipahami.
-
-Tapi ada satu hal penting yang perlu kamu tahu: berbeda dengan Node.js atau Python, Render **tidak punya dukungan bawaan (native) untuk PHP**. Jadi, agar project Fruity POS kamu yang berbasis Laravel dan React/Inertia ini bisa berjalan di Render, kita wajib menggunakan **Docker**.
-
-Jangan khawatir, kamu cuma perlu menambahkan satu file ke dalam projectmu. Berikut adalah panduan lengkapnya:
-
-### Langkah 1: Buat File `Dockerfile`
-Buat satu file baru tanpa ekstensi dengan nama persis `Dockerfile` di direktori utama (root) project `fruity-pos` kamu[cite: 1]. Isi dengan kode berikut:
-```dockerfile
-# Gunakan image PHP 8.2 dengan Apache
-FROM php:8.2-apache
+# Gunakan image PHP 8.3 dengan Apache
+FROM php:8.3-apache
 
 # Aktifkan mod_rewrite Apache (wajib untuk Laravel)
 RUN a2enmod rewrite
