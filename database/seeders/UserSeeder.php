@@ -22,6 +22,7 @@ class UserSeeder extends Seeder
                 'role' => Role::OWNER,
                 'location_id' => null,
                 'is_active' => true,
+                'must_change_password' => false,
             ]
         );
 
@@ -39,6 +40,7 @@ class UserSeeder extends Seeder
                     'role' => Role::STOCKIST,
                     'location_id' => $location->id,
                     'is_active' => true,
+                    'must_change_password' => false,
                 ]
             );
 
@@ -51,6 +53,7 @@ class UserSeeder extends Seeder
                     'role' => Role::KASIR,
                     'location_id' => $location->id,
                     'is_active' => true,
+                    'must_change_password' => false,
                 ]
             );
 
@@ -63,6 +66,7 @@ class UserSeeder extends Seeder
                     'role' => Role::ADMIN,
                     'location_id' => $location->id,
                     'is_active' => true,
+                    'must_change_password' => false,
                 ]
             );
         }

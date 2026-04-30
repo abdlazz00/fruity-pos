@@ -26,6 +26,10 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+    // Force Password Change Routes
+    Route::get('/change-password', [AuthController::class, 'showChangePassword'])->name('password.change');
+    Route::post('/change-password', [AuthController::class, 'updatePassword'])->name('password.change.post');
+
     Route::middleware(RoleMiddleware::class . ':owner')->group(function () {
         Route::get('/dashboard', function () {
             return Inertia::render('Dashboard');
@@ -46,6 +50,17 @@ Route::middleware('auth')->group(function () {
         Route::get('/users/{user}/edit', [\App\Http\Controllers\UserController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}', [\App\Http\Controllers\UserController::class, 'update'])->name('users.update');
         Route::patch('/users/{user}/toggle', [\App\Http\Controllers\UserController::class, 'toggle'])->name('users.toggle');
+
+        // Pricing Engine (Sprint 5 — Owner only)
+        Route::get('/pricing', [\App\Http\Controllers\PricingController::class, 'index'])->name('pricing.index');
+        Route::post('/pricing', [\App\Http\Controllers\PricingController::class, 'store'])->name('pricing.store');
+        Route::get('/pricing/{price}', [\App\Http\Controllers\PricingController::class, 'show'])->name('pricing.show');
+        Route::put('/pricing/{price}', [\App\Http\Controllers\PricingController::class, 'update'])->name('pricing.update');
+        Route::patch('/pricing/{price}/lock', [\App\Http\Controllers\PricingController::class, 'lock'])->name('pricing.lock');
+        Route::patch('/pricing/{price}/unlock', [\App\Http\Controllers\PricingController::class, 'unlock'])->name('pricing.unlock');
+        Route::put('/pricing/{price}/tiers', [\App\Http\Controllers\PricingController::class, 'syncTiers'])->name('pricing.tiers');
+        Route::get('/api/pricing/breakdown/{product}', [\App\Http\Controllers\PricingController::class, 'breakdown'])->name('pricing.breakdown');
+        Route::post('/api/pricing/preview', [\App\Http\Controllers\PricingController::class, 'preview'])->name('pricing.preview');
     });
 
     Route::middleware(RoleMiddleware::class . ':owner,stockist')->group(function () {

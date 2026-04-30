@@ -40,6 +40,16 @@ class Product extends Model
         return $this->hasOne(WeightSafeguard::class);
     }
 
+    public function price()
+    {
+        return $this->hasOne(ProductPrice::class);
+    }
+
+    public function inventories()
+    {
+        return $this->hasMany(Inventory::class);
+    }
+
     /**
      * Auto-generate SKU berdasarkan kategori dan urutan.
      * Format: [3 huruf kategori]-[5 digit angka], contoh: BLK-00012

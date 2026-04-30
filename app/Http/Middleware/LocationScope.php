@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Database\Eloquent\Builder;
 
 class LocationScope
 {
@@ -15,8 +16,24 @@ class LocationScope
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // TODO: In subsequent sprints, register Eloquent global scope here 
-        // to filter by auth()->user()->location_id for non-owner roles.
+        if (auth()->check()) {
+            $user = auth()->user();
+            
+            // Apply global scope only for non-owner roles that have a location_id
+            if ($user->role !== \App\Enums\Role::OWNER && $user->location_id) {
+                $locationId = $user->location_id;
+                
+                $applyScope = function (Builder $builder) use ($locationId) {
+                    $builder->where('location_id', $locationId);
+                };
+
+                // Apply to relevant multi-tenant models
+                \App\Models\PurchaseOrder::addGlobalScope('location', $applyScope);
+                \App\Models\Inbound::addGlobalScope('location', $applyScope);
+                \App\Models\Inventory::addGlobalScope('location', $applyScope);
+                \App\Models\User::addGlobalScope('location', $applyScope);
+            }
+        }
         
         return $next($request);
     }

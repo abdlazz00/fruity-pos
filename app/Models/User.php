@@ -24,6 +24,7 @@ class User extends Authenticatable
         'phone',
         'avatar',
         'password',
+        'must_change_password',
         'role',
         'location_id',
         'is_active',
@@ -51,6 +52,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => \App\Enums\Role::class,
             'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
             'last_login_at' => 'datetime',
         ];
     }

@@ -20,6 +20,13 @@ export default function Sidebar({ isCollapsed, setCollapsed }) {
     const ownerMenu = [
         { label: 'Dashboard', url: '/dashboard', icon: 'M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z' },
         { 
+            label: 'Pricing Engine', 
+            icon: 'M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z',
+            submenus: [
+                { label: 'Daftar Harga', url: '/pricing' },
+            ]
+        },
+        { 
             label: 'Inventaris', 
             icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
             submenus: [

@@ -151,4 +151,23 @@ class AuthController extends Controller
 
         return redirect('/login');
     }
+
+    public function showChangePassword()
+    {
+        return Inertia::render('Auth/ChangePassword');
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'password' => 'required|min:8|confirmed',
+        ]);
+
+        $user = auth()->user();
+        $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
+        $user->must_change_password = false;
+        $user->save();
+
+        return redirect('/dashboard')->with('status', 'Kata sandi berhasil diubah.');
+    }
 }

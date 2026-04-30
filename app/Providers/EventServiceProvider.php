@@ -13,6 +13,10 @@ class EventServiceProvider extends ServiceProvider
         \App\Events\InboundCreated::class => [
             \App\Listeners\RecalculateWAC::class,
             \App\Listeners\SendInboundNotification::class,
+            \App\Listeners\RecalculateHppBaseline::class,
+        ],
+        \App\Events\PriceLocked::class => [
+            \App\Listeners\SyncPriceToAllBranches::class,
         ],
     ];
 
