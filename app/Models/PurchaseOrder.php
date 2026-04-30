@@ -12,8 +12,13 @@ class PurchaseOrder extends Model
     ];
 
     protected $casts = [
-        'order_date' => 'date',
+        'order_date' => 'datetime:Y-m-d H:i:s',
     ];
+
+    protected function serializeDate(\DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
+    }
 
     // ── Relationships ──
 

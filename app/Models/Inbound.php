@@ -12,9 +12,14 @@ class Inbound extends Model
     ];
 
     protected $casts = [
-        'received_date'  => 'date',
+        'received_date'  => 'datetime:Y-m-d H:i:s',
         'shipping_cost'  => 'decimal:2',
     ];
+
+    protected function serializeDate(\DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
+    }
 
     // ── Relationships ──
 
