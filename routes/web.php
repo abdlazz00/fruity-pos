@@ -123,13 +123,24 @@ Route::middleware('auth')->group(function () {
         $request->user()->unreadNotifications->markAsRead();
         return response()->json(['success' => true]);
     })->name('notifications.markRead');
+    // ── Shift Management (Kasir + Admin) ──
+    Route::middleware(RoleMiddleware::class . ':kasir,admin')->group(function () {
+        Route::get('/shift', [\App\Http\Controllers\ShiftController::class, 'index'])->name('shift.index');
+        Route::post('/shift/open', [\App\Http\Controllers\ShiftController::class, 'open'])->name('shift.open');
+        Route::patch('/shift/{shift}/close', [\App\Http\Controllers\ShiftController::class, 'close'])->name('shift.close');
+        Route::get('/shift/{shift}', [\App\Http\Controllers\ShiftController::class, 'show'])->name('shift.show');
+    });
 
-    Route::get('/pos/offline', function () {
-        return Inertia::render('Placeholder', ['title' => 'POS Offline']);
-    })->middleware(RoleMiddleware::class . ':kasir')->name('pos.offline');
+    // ── POS Offline (Kasir only) ──
+    Route::middleware(RoleMiddleware::class . ':kasir')->group(function () {
+        Route::get('/pos/offline', [\App\Http\Controllers\PosOfflineController::class, 'index'])->name('pos.offline');
+        Route::post('/pos/offline', [\App\Http\Controllers\PosOfflineController::class, 'store'])->name('pos.offline.store');
+    });
 
-    Route::get('/pos/online', function () {
-        return Inertia::render('Placeholder', ['title' => 'POS Online']);
-    })->middleware(RoleMiddleware::class . ':admin')->name('pos.online');
+    // ── POS Online (Admin only) ──
+    Route::middleware(RoleMiddleware::class . ':admin')->group(function () {
+        Route::get('/pos/online', [\App\Http\Controllers\PosOnlineController::class, 'index'])->name('pos.online');
+        Route::post('/pos/online', [\App\Http\Controllers\PosOnlineController::class, 'store'])->name('pos.online.store');
+    });
 
 });

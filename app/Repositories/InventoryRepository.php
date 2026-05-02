@@ -65,4 +65,32 @@ class InventoryRepository implements InventoryRepositoryInterface
 
         return $inventory;
     }
+
+    /**
+     * Deduct stock quantity for a product at a specific location (S6-B: POS sale).
+     *
+     * Does NOT change avg_cost — cost basis remains until next inbound.
+     *
+     * @throws \RuntimeException if insufficient stock
+     */
+    public function deductStock(int $productId, int $locationId, float $qty): bool
+    {
+        $inventory = $this->model
+            ->where('product_id', $productId)
+            ->where('location_id', $locationId)
+            ->first();
+
+        if (!$inventory || (float) $inventory->quantity < $qty) {
+            throw new \RuntimeException(
+                "Stok tidak mencukupi untuk product_id={$productId} di location_id={$locationId}. " .
+                "Tersedia: " . ($inventory ? $inventory->quantity : 0) . ", diminta: {$qty}"
+            );
+        }
+
+        $inventory->update([
+            'quantity' => (float) $inventory->quantity - $qty,
+        ]);
+
+        return true;
+    }
 }

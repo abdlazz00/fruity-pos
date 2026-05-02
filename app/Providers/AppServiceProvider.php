@@ -51,6 +51,14 @@ class AppServiceProvider extends ServiceProvider
             \App\Repositories\Contracts\ProductPriceRepositoryInterface::class,
             \App\Repositories\ProductPriceRepository::class
         );
+        $this->app->bind(
+            \App\Repositories\Contracts\ShiftRepositoryInterface::class,
+            \App\Repositories\ShiftRepository::class
+        );
+        $this->app->bind(
+            \App\Repositories\Contracts\TransactionRepositoryInterface::class,
+            \App\Repositories\TransactionRepository::class
+        );
     }
 
     /**
