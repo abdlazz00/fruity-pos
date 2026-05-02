@@ -8,6 +8,19 @@ export default function Index({ inbounds }) {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
     };
 
+    const formatDateTime = (dateString, createdAt) => {
+        if (!dateString) return '-';
+        const datePart = dateString.split(' ')[0];
+        if (!createdAt) return `${datePart} 00:00:00`;
+        
+        const d = new Date(createdAt);
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        const seconds = String(d.getSeconds()).padStart(2, '0');
+        
+        return `${datePart} ${hours}:${minutes}:${seconds}`;
+    };
+
     return (
         <AppLayout
             title="Barang Masuk"
@@ -50,7 +63,7 @@ export default function Index({ inbounds }) {
                                             <td className="px-4 py-3 font-mono text-text-secondary">{inbound.inbound_number}</td>
                                             <td className="px-4 py-3 font-mono text-xs">{inbound.purchase_order?.po_number}</td>
                                             <td className="px-4 py-3">{inbound.purchase_order?.supplier?.name}</td>
-                                            <td className="px-4 py-3">{inbound.received_date}</td>
+                                            <td className="px-4 py-3">{formatDateTime(inbound.received_date, inbound.created_at)}</td>
                                             <td className="px-4 py-3">{inbound.location?.name}</td>
                                             <td className="px-4 py-3 text-right">{inbound.shipping_cost ? formatRp(inbound.shipping_cost) : '-'}</td>
                                             <td className="px-4 py-3 text-right">

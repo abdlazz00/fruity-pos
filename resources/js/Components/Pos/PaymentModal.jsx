@@ -128,6 +128,7 @@ export default function PaymentModal({ isOpen, onClose, total, onConfirm }) {
                                 </div>
                                 <input
                                     type="number"
+                                    step="any"
                                     required
                                     min={total}
                                     className="block w-full pl-12 pr-4 py-4 text-2xl font-bold border border-gray-300 rounded-xl focus:ring-secondary focus:border-secondary shadow-inner"

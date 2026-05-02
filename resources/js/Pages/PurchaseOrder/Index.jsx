@@ -24,6 +24,19 @@ export default function Index({ purchaseOrders, filters = {} }) {
         }
     };
 
+    const formatDateTime = (dateString, createdAt) => {
+        if (!dateString) return '-';
+        const datePart = dateString.split(' ')[0];
+        if (!createdAt) return `${datePart} 00:00:00`;
+        
+        const d = new Date(createdAt);
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        const seconds = String(d.getSeconds()).padStart(2, '0');
+        
+        return `${datePart} ${hours}:${minutes}:${seconds}`;
+    };
+
     return (
         <AppLayout
             title="Purchase Order"
@@ -84,7 +97,7 @@ export default function Index({ purchaseOrders, filters = {} }) {
                                             className={`${index % 2 === 0 ? 'bg-white' : 'bg-[#F9FAFB]'} hover:bg-[#F0FDF4] transition-colors`}
                                         >
                                             <td className="px-4 py-3 font-mono text-text-secondary">{po.po_number}</td>
-                                            <td className="px-4 py-3">{po.order_date}</td>
+                                            <td className="px-4 py-3">{formatDateTime(po.order_date, po.created_at)}</td>
                                             <td className="px-4 py-3">{po.supplier?.name}</td>
                                             <td className="px-4 py-3">{po.location?.name}</td>
                                             <td className="px-4 py-3">{getStatusBadge(po.status)}</td>

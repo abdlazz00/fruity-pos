@@ -50,6 +50,14 @@ export default function ShiftIndex({ activeShift, activeShiftTransactions, shift
         }).format(number);
     };
 
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        return new Intl.DateTimeFormat('id-ID', { 
+            day: '2-digit', month: 'short', year: 'numeric', 
+            hour: '2-digit', minute: '2-digit' 
+        }).format(new Date(dateString));
+    };
+
     const renderEmptyState = () => (
         <div className="flex flex-col items-center justify-center h-[60vh] bg-white rounded-xl border border-gray-200">
             <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -99,7 +107,7 @@ export default function ShiftIndex({ activeShift, activeShiftTransactions, shift
                             <Badge status="approved">Sedang Berjalan</Badge>
                         </div>
                         <p className="text-sm text-gray-500">
-                            Dibuka pada: {new Date(activeShift.opened_at).toLocaleString('id-ID')}
+                            Dibuka pada: {formatDate(activeShift.opened_at)}
                         </p>
                     </div>
                     <Button variant="danger" onClick={() => {
@@ -154,7 +162,7 @@ export default function ShiftIndex({ activeShift, activeShiftTransactions, shift
                                     {activeShiftTransactions.data.map((trx, i) => (
                                         <tr key={trx.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                                             <td className="px-4 py-3 font-mono text-gray-900">{trx.transaction_number}</td>
-                                            <td className="px-4 py-3 text-gray-600">{new Date(trx.created_at).toLocaleTimeString('id-ID')}</td>
+                                            <td className="px-4 py-3 text-gray-600">{new Date(trx.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
                                             <td className="px-4 py-3 capitalize">{trx.type}</td>
                                             <td className="px-4 py-3">
                                                 <Badge status={trx.payment_method === 'cash' ? 'success' : 'info'}>
@@ -234,17 +242,17 @@ export default function ShiftIndex({ activeShift, activeShiftTransactions, shift
                                 <tbody className="divide-y divide-gray-200">
                                     {shifts.data.map(shift => (
                                         <tr key={shift.id} className="hover:bg-gray-50">
-                                            <td className="px-4 py-3 text-gray-600">{new Date(shift.opened_at).toLocaleString('id-ID')}</td>
-                                            <td className="px-4 py-3 text-gray-600">{shift.closed_at ? new Date(shift.closed_at).toLocaleString('id-ID') : '-'}</td>
+                                            <td className="px-4 py-3 text-gray-600">{formatDate(shift.opened_at)}</td>
+                                            <td className="px-4 py-3 text-gray-600">{formatDate(shift.closed_at)}</td>
                                             <td className="px-4 py-3 text-right text-gray-900">{formatRupiah(shift.opening_balance)}</td>
                                             <td className="px-4 py-3 text-right text-gray-900">{formatRupiah(shift.actual_balance || 0)}</td>
                                             <td className="px-4 py-3 text-right font-medium">
-                                                {shift.difference > 0 ? (
-                                                    <span className="text-blue-600">+{formatRupiah(shift.difference)}</span>
-                                                ) : shift.difference < 0 ? (
-                                                    <span className="text-red-600">{formatRupiah(shift.difference)}</span>
-                                                ) : (
+                                                {Math.abs(shift.difference) < 0.01 ? (
                                                     <span className="text-green-600">Pas</span>
+                                                ) : shift.difference > 0 ? (
+                                                    <span className="text-blue-600">+{formatRupiah(shift.difference)}</span>
+                                                ) : (
+                                                    <span className="text-red-600">{formatRupiah(shift.difference)}</span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
@@ -276,6 +284,7 @@ export default function ShiftIndex({ activeShift, activeShiftTransactions, shift
                                 </div>
                                 <input
                                     type="number"
+                                    step="any"
                                     required
                                     min="0"
                                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-accent focus:border-accent"
@@ -324,6 +333,7 @@ export default function ShiftIndex({ activeShift, activeShiftTransactions, shift
                                     </div>
                                     <input
                                         type="number"
+                                        step="any"
                                         required
                                         min="0"
                                         className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-accent focus:border-accent font-bold"
@@ -345,7 +355,7 @@ export default function ShiftIndex({ activeShift, activeShiftTransactions, shift
                                     const actual = parseFloat(closeForm.data.actual_balance) || 0;
                                     const diff = actual - expected;
                                     
-                                    if (diff === 0) return <div className="text-sm text-green-600 font-medium">Saldo pas (tidak ada selisih)</div>;
+                                    if (Math.abs(diff) < 0.01) return <div className="text-sm text-green-600 font-medium">Saldo pas (tidak ada selisih)</div>;
                                     if (diff > 0) return <div className="text-sm text-blue-600 font-medium">Selisih lebih: +{formatRupiah(diff)}</div>;
                                     return <div className="text-sm text-red-600 font-medium">Selisih kurang: {formatRupiah(diff)}</div>;
                                 })()
@@ -368,7 +378,7 @@ export default function ShiftIndex({ activeShift, activeShiftTransactions, shift
                         <div className="flex justify-between items-start border-b border-gray-100 pb-3">
                             <div>
                                 <h3 className="font-bold text-lg text-gray-900">{selectedTransaction.transaction_number}</h3>
-                                <p className="text-sm text-gray-500">{new Date(selectedTransaction.created_at).toLocaleString('id-ID')}</p>
+                                <p className="text-sm text-gray-500">{formatDate(selectedTransaction.created_at)}</p>
                             </div>
                             <Badge status="success">Completed</Badge>
                         </div>

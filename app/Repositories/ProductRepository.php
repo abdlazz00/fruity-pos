@@ -52,11 +52,28 @@ class ProductRepository implements ProductRepositoryInterface
     public function syncUnits($productId, array $unitsData)
     {
         $product = $this->model->findOrFail($productId);
-        // Hapus unit lama, ganti baru
-        $product->units()->delete();
         
-        if (!empty($unitsData)) {
-            $product->units()->createMany($unitsData);
+        $newUnitNames = collect($unitsData)->pluck('name')->filter()->toArray();
+
+        // Hapus unit lama yang tidak ada di request baru
+        foreach ($product->units as $unit) {
+            if (!in_array($unit->name, $newUnitNames)) {
+                try {
+                    $unit->delete();
+                } catch (\Exception $e) {
+                    // Abaikan jika unit sedang dipakai di inbound_items atau table lain
+                }
+            }
+        }
+
+        // Tambahkan atau perbarui unit
+        foreach ($unitsData as $data) {
+            if (isset($data['name'])) {
+                $product->units()->updateOrCreate(
+                    ['name' => $data['name']],
+                    $data
+                );
+            }
         }
     }
 
