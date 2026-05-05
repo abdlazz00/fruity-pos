@@ -70,4 +70,15 @@ class TransactionRepository implements TransactionRepositoryInterface
             ->where('payment_method', 'cash')
             ->sum('total');
     }
+
+    /**
+     * Find a transaction by its offline UUID (for dedup during sync).
+     * Returns null if not found.
+     */
+    public function findByOfflineUuid(string $uuid)
+    {
+        return $this->model
+            ->where('offline_uuid', $uuid)
+            ->first();
+    }
 }

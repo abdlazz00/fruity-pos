@@ -86,7 +86,7 @@ class TransactionService
             // 4. Generate transaction number
             $transactionNumber = Transaction::generateNumber($location->code);
 
-            // 5. Create transaction
+            // 5. Create transaction (with optional offline_uuid for sync)
             $transaction = $this->transactionRepo->create([
                 'transaction_number' => $transactionNumber,
                 'shift_id'           => $shift->id,
@@ -101,6 +101,7 @@ class TransactionService
                 'payment_amount'     => round($paymentAmount, 2),
                 'change_amount'      => round($changeAmount, 2),
                 'status'             => 'completed',
+                'offline_uuid'       => $data['offline_uuid'] ?? null,
             ]);
 
             // 6. Save items + deduct inventory
@@ -109,6 +110,7 @@ class TransactionService
                     'product_id'   => $item['product_id'],
                     'product_name' => $item['product_name'],
                     'unit_price'   => $item['unit_price'],
+                    'hpp_at_sale'  => $item['hpp_at_sale'],
                     'qty'          => $item['qty'],
                     'subtotal'     => $item['subtotal'],
                 ]);
@@ -195,6 +197,7 @@ class TransactionService
                     'product_id'   => $item['product_id'],
                     'product_name' => $item['product_name'],
                     'unit_price'   => $item['unit_price'],
+                    'hpp_at_sale'  => $item['hpp_at_sale'],
                     'qty'          => $item['qty'],
                     'subtotal'     => $item['subtotal'],
                 ]);
@@ -276,10 +279,14 @@ class TransactionService
                 }
             }
 
+            // Snapshot HPP (avg_cost) saat jual untuk laporan P&L (Sprint 9)
+            $hppAtSale = $inventory ? (float) $inventory->avg_cost : 0;
+
             $resolved[] = [
                 'product_id'   => $productId,
                 'product_name' => $price->product->name,
                 'unit_price'   => $unitPrice,
+                'hpp_at_sale'  => $hppAtSale,
                 'qty'          => $qty,
                 'subtotal'     => round($unitPrice * $qty, 2),
             ];

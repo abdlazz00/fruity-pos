@@ -135,6 +135,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware(RoleMiddleware::class . ':kasir')->group(function () {
         Route::get('/pos/offline', [\App\Http\Controllers\PosOfflineController::class, 'index'])->name('pos.offline');
         Route::post('/pos/offline', [\App\Http\Controllers\PosOfflineController::class, 'store'])->name('pos.offline.store');
+        Route::post('/pos/offline/sync', [\App\Http\Controllers\PosOfflineController::class, 'sync'])->name('pos.offline.sync');
     });
 
     // ── POS Online (Admin only) ──

@@ -12,6 +12,7 @@ class Transaction extends Model
         'platform', 'courier', 'shipping_method', 'shipping_cost',
         'subtotal', 'discount_amount', 'discount_note', 'total',
         'payment_method', 'payment_amount', 'change_amount', 'status',
+        'offline_uuid',
     ];
 
     protected $casts = [

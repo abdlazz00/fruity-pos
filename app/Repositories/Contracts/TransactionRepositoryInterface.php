@@ -10,4 +10,5 @@ interface TransactionRepositoryInterface
     public function getByLocation(int $locationId, int $perPage = 15);
     public function voidTransaction(int $id);
     public function sumCashByShift(int $shiftId): float;
+    public function findByOfflineUuid(string $uuid);
 }

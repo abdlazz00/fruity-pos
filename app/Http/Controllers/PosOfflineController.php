@@ -4,19 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Services\TransactionService;
 use App\Services\ShiftService;
+use App\Services\OfflineSyncService;
 use Illuminate\Http\Request;
 
 class PosOfflineController extends Controller
 {
     protected $transactionService;
     protected $shiftService;
+    protected $offlineSyncService;
 
     public function __construct(
         TransactionService $transactionService,
-        ShiftService $shiftService
+        ShiftService $shiftService,
+        OfflineSyncService $offlineSyncService
     ) {
         $this->transactionService = $transactionService;
         $this->shiftService = $shiftService;
+        $this->offlineSyncService = $offlineSyncService;
     }
 
     /**
@@ -66,6 +70,7 @@ class PosOfflineController extends Controller
             'discount_note'     => 'nullable|string|max:255',
             'payment_method'    => 'required|in:cash,transfer,ewallet',
             'payment_amount'    => 'required|numeric|min:0',
+            'offline_uuid'      => 'nullable|uuid|unique:transactions,offline_uuid',
         ]);
 
         $transaction = $this->transactionService->createOfflineTransaction(
@@ -79,4 +84,37 @@ class PosOfflineController extends Controller
 
         return back()->with('status', "Transaksi {$transaction->transaction_number} berhasil!");
     }
+
+    /**
+     * Sync batch of offline transactions from Dexie.js (S7-B07).
+     *
+     * Receives an array of transactions queued locally during offline mode.
+     * Each transaction is processed independently; failures don't affect others.
+     * Duplicate offline_uuid values are detected and skipped (S7-B08).
+     *
+     * POST /pos/offline/sync
+     */
+    public function sync(Request $request)
+    {
+        $request->validate([
+            'transactions'                     => 'required|array|min:1|max:50',
+            'transactions.*.offline_uuid'      => 'required|uuid',
+            'transactions.*.shift_id'          => 'required|integer',
+            'transactions.*.items'             => 'required|array|min:1',
+            'transactions.*.items.*.product_id'=> 'required|integer',
+            'transactions.*.items.*.qty'       => 'required|numeric|min:0.01',
+            'transactions.*.payment_method'    => 'required|in:cash,transfer,ewallet',
+            'transactions.*.payment_amount'    => 'required|numeric|min:0',
+            'transactions.*.discount_amount'   => 'nullable|numeric|min:0',
+            'transactions.*.discount_note'     => 'nullable|string|max:255',
+        ]);
+
+        $result = $this->offlineSyncService->syncBatch(
+            $request->input('transactions'),
+            $request->user()->id
+        );
+
+        return response()->json($result);
+    }
 }
+
