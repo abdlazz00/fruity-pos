@@ -44,6 +44,16 @@ export default function Sidebar({ isCollapsed, setCollapsed }) {
                 { label: 'Barang Masuk', url: '/procurement/inbounds' },
             ]
         },
+        { 
+            label: 'Manajemen Stok', 
+            icon: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4',
+            submenus: [
+                { label: 'Stok Produk', url: '/inventory/stocks' },
+                { label: 'Mutasi Stok', url: '/inventory/mutations' },
+                { label: 'Waste / Rusak', url: '/inventory/waste' },
+                { label: 'Stock Opname', url: '/inventory/opname' },
+            ]
+        },
         { label: 'Kelola Toko', url: '/stores', icon: 'M3 21h18 M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16 M9 21v-5a2 2 0 012-2h2a2 2 0 012 2v5' },
         { label: 'Kelola User', url: '/users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
     ];
@@ -65,6 +75,16 @@ export default function Sidebar({ isCollapsed, setCollapsed }) {
             submenus: [
                 { label: 'Purchase Order', url: '/procurement/purchase-orders' },
                 { label: 'Barang Masuk', url: '/procurement/inbounds' },
+            ]
+        },
+        { 
+            label: 'Manajemen Stok', 
+            icon: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4',
+            submenus: [
+                { label: 'Stok Produk', url: '/inventory/stocks' },
+                { label: 'Mutasi Stok', url: '/inventory/mutations' },
+                { label: 'Waste / Rusak', url: '/inventory/waste' },
+                { label: 'Stock Opname', url: '/inventory/opname' },
             ]
         },
     ];

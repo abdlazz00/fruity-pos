@@ -1,12 +1,22 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import AppLayout from '../../Layouts/AppLayout';
 import { Head, router } from '@inertiajs/react';
+import { v4 as uuidv4 } from 'uuid';
 import ProductCard from '../../Components/Pos/ProductCard';
 import CartItem from '../../Components/Pos/CartItem';
 import PaymentModal from '../../Components/Pos/PaymentModal';
 import TransactionResultModal from '../../Components/Pos/TransactionResultModal';
+import OfflineIndicator from '../../Components/OfflineIndicator';
+import useOfflineSync from '../../Hooks/useOfflineSync';
+import { cacheCatalog, savePendingTransaction, getOfflineCatalog } from '../../lib/offlineDB';
 
-export default function PosOffline({ shift, catalog }) {
+export default function PosOffline({ shift, catalog: serverCatalog }) {
+    // ── S7-F07: Offline sync hook ──
+    const { isOnline, isSyncing, pendingCount, syncNow, refreshPendingCount } = useOfflineSync();
+
+    // ── S7-F10: Dual catalog source (server vs IndexedDB) ──
+    const [catalog, setCatalog] = useState(serverCatalog);
+
     const [searchQuery, setSearchQuery] = useState('');
     const [cart, setCart] = useState([]);
     const [discountAmount, setDiscountAmount] = useState('');
@@ -18,6 +28,24 @@ export default function PosOffline({ shift, catalog }) {
         status: 'success',
         transaction: null
     });
+
+    // ── S7-F05: Cache catalog ke IndexedDB saat online ──
+    useEffect(() => {
+        if (serverCatalog && serverCatalog.length > 0) {
+            cacheCatalog(serverCatalog);
+        }
+    }, [serverCatalog]);
+
+    // ── S7-F06: Jika page load gagal (offline reload), load dari IndexedDB ──
+    useEffect(() => {
+        if (!serverCatalog || serverCatalog.length === 0) {
+            getOfflineCatalog().then(offlineCatalog => {
+                if (offlineCatalog.length > 0) {
+                    setCatalog(offlineCatalog);
+                }
+            });
+        }
+    }, [serverCatalog]);
 
     const formatRupiah = (number) => {
         return new Intl.NumberFormat('id-ID', {
@@ -137,62 +165,114 @@ export default function PosOffline({ shift, catalog }) {
     const numDiscount = parseFloat(discountAmount) || 0;
     const cartTotal = Math.max(0, cartSubtotal - numDiscount);
 
-    // Submit Transaction
-    const handlePaymentConfirm = (paymentData) => {
-        router.post('/pos/offline', {
+    // ── S7-F10 & S7-F11: Helper function to reset cart after transaction ──
+    const resetCart = () => {
+        setCart([]);
+        setDiscountAmount('');
+        setDiscountNote('');
+        setIsPaymentModalOpen(false);
+    };
+
+    // ── S7-F10 & S7-F11: Dual-Path Payment — Online → server, Offline → IndexedDB ──
+    const handlePaymentConfirm = async (paymentData) => {
+        const transactionData = {
             shift_id: shift.id,
             items: cart.map(item => ({ product_id: item.product_id, qty: item.qty })),
             discount_amount: numDiscount,
-            discount_note: discountNote,
+            discount_note: discountNote || null,
             payment_method: paymentData.payment_method,
-            payment_amount: paymentData.payment_amount
-        }, {
-            preserveScroll: true,
-            onSuccess: (page) => {
-                setCart([]);
-                setDiscountAmount('');
-                setDiscountNote('');
-                setIsPaymentModalOpen(false);
+            payment_amount: paymentData.payment_amount,
+        };
+
+        if (isOnline) {
+            // ── PATH A: Online → kirim langsung ke server ──
+            router.post('/pos/offline', {
+                ...transactionData,
+                offline_uuid: uuidv4(),   // Tetap kirim UUID untuk idempotency
+            }, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    resetCart();
+                    setResultModalState({
+                        isOpen: true,
+                        status: 'success',
+                        transaction: {
+                            transaction_number: 'Baru Saja',
+                            total: cartTotal,
+                            payment_method: paymentData.payment_method,
+                            change_amount: paymentData.payment_method === 'cash' 
+                                ? Math.max(0, paymentData.payment_amount - cartTotal) 
+                                : 0
+                        }
+                    });
+                },
+                onError: () => {
+                    setIsPaymentModalOpen(false);
+                    setResultModalState({
+                        isOpen: true,
+                        status: 'error',
+                        transaction: null
+                    });
+                }
+            });
+
+        } else {
+            // ── PATH B: Offline → simpan ke IndexedDB ──
+            try {
+                await savePendingTransaction({
+                    offline_uuid: uuidv4(),
+                    ...transactionData,
+                });
+
+                await refreshPendingCount();
+                resetCart();
+
                 setResultModalState({
                     isOpen: true,
                     status: 'success',
-                    // Data is not immediately available here in inertia without reloading, 
-                    // but we can fake the transaction data for the success modal based on the cart if backend doesn't return json on full page reload.
-                    // Wait, since we are returning back()->with('status', ...), we don't have the transaction object in JS, 
-                    // so we will show a generic success by relying on the flash message or calculated data.
                     transaction: {
-                        transaction_number: 'Baru Saja',
+                        transaction_number: '⏳ Tersimpan Offline',
                         total: cartTotal,
                         payment_method: paymentData.payment_method,
-                        change_amount: paymentData.payment_method === 'cash' ? Math.max(0, paymentData.payment_amount - cartTotal) : 0
+                        change_amount: paymentData.payment_method === 'cash'
+                            ? Math.max(0, paymentData.payment_amount - cartTotal)
+                            : 0,
                     }
                 });
-            },
-            onError: () => {
+            } catch (err) {
+                console.error('Failed to save offline transaction:', err);
                 setIsPaymentModalOpen(false);
-                setResultModalState({
-                    isOpen: true,
-                    status: 'error',
-                    transaction: null
-                });
+                setResultModalState({ isOpen: true, status: 'error', transaction: null });
             }
-        });
+        }
     };
 
     return (
         <AppLayout title="POS Offline" breadcrumbs={[{ label: 'POS', url: '/pos/offline' }]}>
             <Head title="POS Offline" />
 
-            {/* Offline Banner indicating Kasir constraint */}
-            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-4 rounded-r-lg flex items-center justify-between">
-                <div className="flex items-center">
-                    <svg className="w-5 h-5 text-yellow-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            {/* S7-F09 & S7-F10: Offline/Online Status Banner */}
+            <div className="flex items-center justify-between mb-4">
+                <div className={`border-l-4 p-3 rounded-r-lg flex items-center flex-1 mr-4 ${
+                    isOnline 
+                        ? 'bg-yellow-50 border-yellow-400' 
+                        : 'bg-orange-50 border-orange-400'
+                }`}>
+                    <svg className={`w-5 h-5 mr-2 ${isOnline ? 'text-yellow-600' : 'text-orange-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <p className="text-sm text-yellow-700">
-                        Mode Kasir Fisik — Pastikan keranjang belanja sesuai dengan fisik buah yang dibeli pelanggan.
+                    <p className={`text-sm ${isOnline ? 'text-yellow-700' : 'text-orange-700'}`}>
+                        {isOnline 
+                            ? 'Mode Kasir Fisik — Transaksi langsung tersimpan ke server.'
+                            : '⚡ Mode Offline — Transaksi disimpan lokal, otomatis sync saat online.'}
                     </p>
                 </div>
+                <OfflineIndicator 
+                    isOnline={isOnline}
+                    pendingCount={pendingCount}
+                    isSyncing={isSyncing}
+                    onSyncClick={syncNow}
+                />
             </div>
 
             {/* 2-Column Layout */}

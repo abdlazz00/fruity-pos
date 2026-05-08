@@ -144,4 +144,48 @@ Route::middleware('auth')->group(function () {
         Route::post('/pos/online', [\App\Http\Controllers\PosOnlineController::class, 'store'])->name('pos.online.store');
     });
 
+    // ══════════════════════════════════════════════════════════
+    // ── Sprint 8: Mutasi Stok + Waste + Stock Opname ──
+    // ══════════════════════════════════════════════════════════
+
+    // ── Laporan Stok Realtime ──
+    Route::middleware(RoleMiddleware::class . ':owner,stockist')->group(function () {
+        Route::get('/inventory/stocks', [\App\Http\Controllers\InventoryController::class, 'index'])->name('inventory.stocks');
+    });
+
+    // ── Mutasi Stok (Stockist create/ship, Stockist destination receive) ──
+    Route::middleware(RoleMiddleware::class . ':owner,stockist')->group(function () {
+        Route::get('/inventory/mutations', [\App\Http\Controllers\MutationController::class, 'index'])->name('mutations.index');
+        Route::get('/inventory/mutations/create', [\App\Http\Controllers\MutationController::class, 'create'])->name('mutations.create');
+        Route::post('/inventory/mutations', [\App\Http\Controllers\MutationController::class, 'store'])->name('mutations.store');
+        Route::get('/inventory/mutations/{id}', [\App\Http\Controllers\MutationController::class, 'show'])->name('mutations.show');
+        Route::patch('/inventory/mutations/{id}/ship', [\App\Http\Controllers\MutationController::class, 'ship'])->name('mutations.ship');
+        Route::patch('/inventory/mutations/{id}/receive', [\App\Http\Controllers\MutationController::class, 'receive'])->name('mutations.receive');
+        Route::patch('/inventory/mutations/{id}/complete', [\App\Http\Controllers\MutationController::class, 'complete'])->name('mutations.complete');
+    });
+
+    // ── Waste Management (Stockist submit, Owner approve/reject) ──
+    Route::middleware(RoleMiddleware::class . ':owner,stockist')->group(function () {
+        Route::get('/inventory/waste', [\App\Http\Controllers\WasteController::class, 'index'])->name('waste.index');
+        Route::get('/inventory/waste/create', [\App\Http\Controllers\WasteController::class, 'create'])->name('waste.create');
+        Route::post('/inventory/waste', [\App\Http\Controllers\WasteController::class, 'store'])->name('waste.store');
+        Route::get('/inventory/waste/{id}', [\App\Http\Controllers\WasteController::class, 'show'])->name('waste.show');
+    });
+    Route::middleware(RoleMiddleware::class . ':owner')->group(function () {
+        Route::patch('/inventory/waste/{id}/approve', [\App\Http\Controllers\WasteController::class, 'approve'])->name('waste.approve');
+        Route::patch('/inventory/waste/{id}/reject', [\App\Http\Controllers\WasteController::class, 'reject'])->name('waste.reject');
+    });
+
+    // ── Stock Opname (Stockist conduct, Owner approve) ──
+    Route::middleware(RoleMiddleware::class . ':owner,stockist')->group(function () {
+        Route::get('/inventory/opname', [\App\Http\Controllers\OpnameController::class, 'index'])->name('opname.index');
+        Route::post('/inventory/opname/start', [\App\Http\Controllers\OpnameController::class, 'start'])->name('opname.start');
+        Route::get('/inventory/opname/{id}', [\App\Http\Controllers\OpnameController::class, 'show'])->name('opname.show');
+        Route::put('/inventory/opname/{id}/counts', [\App\Http\Controllers\OpnameController::class, 'updateCounts'])->name('opname.updateCounts');
+        Route::patch('/inventory/opname/{id}/submit', [\App\Http\Controllers\OpnameController::class, 'submit'])->name('opname.submit');
+    });
+    Route::middleware(RoleMiddleware::class . ':owner')->group(function () {
+        Route::patch('/inventory/opname/{id}/approve', [\App\Http\Controllers\OpnameController::class, 'approve'])->name('opname.approve');
+    });
+
 });

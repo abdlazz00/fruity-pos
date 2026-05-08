@@ -59,6 +59,18 @@ class AppServiceProvider extends ServiceProvider
             \App\Repositories\Contracts\TransactionRepositoryInterface::class,
             \App\Repositories\TransactionRepository::class
         );
+        $this->app->bind(
+            \App\Repositories\Contracts\MutationRepositoryInterface::class,
+            \App\Repositories\MutationRepository::class
+        );
+        $this->app->bind(
+            \App\Repositories\Contracts\WasteRepositoryInterface::class,
+            \App\Repositories\WasteRepository::class
+        );
+        $this->app->bind(
+            \App\Repositories\Contracts\OpnameRepositoryInterface::class,
+            \App\Repositories\OpnameRepository::class
+        );
     }
 
     /**

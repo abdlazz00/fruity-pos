@@ -21,18 +21,22 @@ class RecalculateHppBaseline
         $this->pricingService = $pricingService;
     }
 
-    public function handle(InboundCreated $event): void
+    public function handle(object $event): void
     {
-        $inbound = $event->inbound->load('items');
+        $productIds = [];
 
-        // Collect unique product IDs from this inbound
-        $productIds = $inbound->items
-            ->pluck('product_id')
-            ->unique()
-            ->values()
-            ->toArray();
+        if ($event instanceof \App\Events\InboundCreated) {
+            $inbound = $event->inbound->load('items');
+            $productIds = $inbound->items->pluck('product_id')->unique()->values()->toArray();
+        } elseif ($event instanceof \App\Events\WasteApproved) {
+            $waste = $event->wasteRequest->load('items');
+            $productIds = $waste->items->pluck('product_id')->unique()->values()->toArray();
+        } else {
+            return;
+        }
 
-        // Recalculate baseline + send notification if changed
-        $this->pricingService->onInboundReceived($productIds);
+        if (!empty($productIds)) {
+            $this->pricingService->onInboundReceived($productIds);
+        }
     }
 }
