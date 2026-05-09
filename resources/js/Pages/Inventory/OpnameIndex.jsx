@@ -1,195 +1,199 @@
-import React from 'react';
+import React, { useState } from 'react';
+import AppLayout from '../../Layouts/AppLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import AppLayout from '@/Layouts/AppLayout';
-import Badge from '@/Components/Badge';
-import Button from '@/Components/Button';
+import StatusBadge from '../../Components/Inventory/StatusBadge';
 
-const statusConfig = {
-    in_progress: { label: 'Sedang Berjalan', variant: 'info' },
-    submitted:   { label: 'Menunggu Approval', variant: 'warning' },
-    approved:    { label: 'Selesai', variant: 'success' },
-};
-
-export default function OpnameIndex({ opnames, locations = [], filters = {}, has_active_opname }) {
+export default function OpnameIndex({ opnames, locations, filters, has_active_opname }) {
     const { auth } = usePage().props;
-    const isOwner = auth?.user?.role === 'owner';
-    const isStockist = auth?.user?.role === 'stockist';
+    const isOwner = auth.user.role === 'owner';
+    const isStockist = auth.user.role === 'stockist';
+    const [isStarting, setIsStarting] = useState(false);
 
-    // Check if there's an active opname for disable logic
-    const hasActiveOpname = has_active_opname;
-
-    const handleStatusFilter = (e) => {
-        router.get('/inventory/opname', {
-            status: e.target.value || undefined,
-            location_id: filters.location_id || undefined,
-        }, { preserveState: true, replace: true });
+    const handleFilterStatus = (status) => {
+        router.get('/inventory/opname', { ...filters, status, page: 1 }, { preserveState: true });
     };
 
-    const handleLocationFilter = (e) => {
-        router.get('/inventory/opname', {
-            status: filters.status || undefined,
-            location_id: e.target.value || undefined,
-        }, { preserveState: true, replace: true });
+    const handleFilterLocation = (e) => {
+        router.get('/inventory/opname', { ...filters, location_id: e.target.value, page: 1 }, { preserveState: true });
     };
 
-    const handleStartOpname = () => {
-        router.post('/inventory/opname/start');
-    };
-
-    const formatDate = (dateString) => {
-        if (!dateString) return '-';
-        return new Date(dateString).toLocaleDateString('id-ID', {
-            day: 'numeric', month: 'short', year: 'numeric',
+    const startOpnameSession = () => {
+        if (!confirm('Mulai sesi opname baru? Sistem akan menyimpan snapshot stok saat ini.')) return;
+        
+        setIsStarting(true);
+        router.post('/inventory/opname/start', {}, {
+            onFinish: () => setIsStarting(false),
         });
     };
 
-    const formatRp = (value) => {
-        if (!value) return '-';
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
-    };
+    const statusTabs = [
+        { value: '', label: 'Semua' },
+        { value: 'in_progress', label: 'In Progress' },
+        { value: 'submitted', label: 'Menunggu Approval' },
+        { value: 'approved', label: 'Selesai' },
+    ];
+
+    const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
 
     return (
-        <AppLayout
-            title="Stock Opname"
-            breadcrumbs={[
-                { label: 'Home', url: '/dashboard' },
-                { label: 'Stock Opname' },
-            ]}
-        >
+        <AppLayout title="Stock Opname" breadcrumbs={[{ label: 'Inventori' }, { label: 'Stock Opname', url: '/inventory/opname' }]}>
             <Head title="Stock Opname" />
 
-            <div className="flex flex-col space-y-6">
-                <div className="flex justify-between items-center">
-                    <div>
-                        <h1 className="text-2xl font-semibold text-[#1C1C1C]">Stock Opname</h1>
-                        <p className="text-sm text-text-secondary mt-1">
-                            Audit stok fisik dan bandingkan dengan data sistem
-                        </p>
-                    </div>
-                    {isStockist && (
-                        <Button
-                            variant="primary"
-                            onClick={handleStartOpname}
-                            disabled={hasActiveOpname}
-                            title={hasActiveOpname ? 'Selesaikan opname aktif terlebih dahulu' : ''}
-                        >
-                            {hasActiveOpname ? '⏳ Ada Opname Aktif' : '+ Mulai Opname Baru'}
-                        </Button>
-                    )}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Stock Opname</h1>
+                    <p className="text-sm text-gray-500 mt-1">Lakukan audit fisik rutin untuk menyelaraskan stok sistem dan gudang.</p>
                 </div>
+                
+                {isStockist && (
+                    <button 
+                        onClick={startOpnameSession}
+                        disabled={has_active_opname || isStarting}
+                        className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={has_active_opname ? "Selesaikan sesi aktif terlebih dahulu." : "Mulai sesi baru"}
+                    >
+                        {isStarting ? (
+                            <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        ) : (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                        )}
+                        Mulai Sesi Opname Baru
+                    </button>
+                )}
+            </div>
 
-                <div className="bg-white rounded-xl border border-border overflow-hidden">
-                    {/* Toolbar */}
-                    <div className="p-4 border-b border-border bg-gray-50/50 flex flex-wrap items-center gap-3">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-text-secondary">Status:</span>
-                            <select
-                                className="border border-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20"
-                                value={filters.status || ''}
-                                onChange={handleStatusFilter}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="p-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between gap-4">
+                    {/* Status Tabs */}
+                    <div className="flex space-x-1 overflow-x-auto p-1 bg-gray-200/50 rounded-lg">
+                        {statusTabs.map(tab => (
+                            <button
+                                key={tab.value}
+                                onClick={() => handleFilterStatus(tab.value)}
+                                className={`px-4 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
+                                    (filters.status || '') === tab.value 
+                                        ? 'bg-white text-primary shadow-sm' 
+                                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
+                                }`}
                             >
-                                <option value="">Semua</option>
-                                <option value="in_progress">Sedang Berjalan</option>
-                                <option value="submitted">Menunggu Approval</option>
-                                <option value="approved">Selesai</option>
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Location Filter for Owner */}
+                    {isOwner && (
+                        <div className="min-w-[200px]">
+                            <select 
+                                className="w-full form-input bg-white"
+                                value={filters.location_id || ''}
+                                onChange={handleFilterLocation}
+                            >
+                                <option value="">Semua Toko</option>
+                                {locations?.map(loc => (
+                                    <option key={loc.id} value={loc.id}>{loc.name}</option>
+                                ))}
                             </select>
                         </div>
-
-                        {isOwner && (
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm text-text-secondary">Lokasi:</span>
-                                <select
-                                    className="border border-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20"
-                                    value={filters.location_id || ''}
-                                    onChange={handleLocationFilter}
-                                >
-                                    <option value="">Semua Toko</option>
-                                    {locations.map(loc => (
-                                        <option key={loc.id} value={loc.id}>{loc.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Table */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-primary text-white uppercase text-xs">
-                                    <th className="px-4 py-3 font-medium">No. Opname</th>
-                                    <th className="px-4 py-3 font-medium">Lokasi</th>
-                                    <th className="px-4 py-3 font-medium">Pelaksana</th>
-                                    <th className="px-4 py-3 font-medium">Tanggal</th>
-                                    <th className="px-4 py-3 font-medium">Status</th>
-                                    {isOwner && <th className="px-4 py-3 font-medium text-right">Nilai Penyusutan</th>}
-                                    <th className="px-4 py-3 font-medium text-right">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="text-sm divide-y divide-border">
-                                {opnames.data?.length > 0 ? (
-                                    opnames.data.map((opname, index) => {
-                                        const cfg = statusConfig[opname.status] || { label: opname.status, variant: 'default' };
-                                        return (
-                                            <tr
-                                                key={opname.id}
-                                                className={`${index % 2 === 0 ? 'bg-white' : 'bg-[#F9FAFB]'} hover:bg-[#F0FDF4] transition-colors`}
-                                            >
-                                                <td className="px-4 py-3 font-mono text-text-secondary text-xs">{opname.opname_number}</td>
-                                                <td className="px-4 py-3 font-medium">{opname.location?.name}</td>
-                                                <td className="px-4 py-3 text-text-secondary">{opname.conductor?.name}</td>
-                                                <td className="px-4 py-3 text-text-secondary">{formatDate(opname.opname_date)}</td>
-                                                <td className="px-4 py-3"><Badge variant={cfg.variant}>{cfg.label}</Badge></td>
-                                                {isOwner && (
-                                                    <td className="px-4 py-3 text-right font-medium text-[#DC2626]">
-                                                        {opname.total_shrinkage_value ? formatRp(opname.total_shrinkage_value) : '-'}
-                                                    </td>
-                                                )}
-                                                <td className="px-4 py-3 text-right">
-                                                    <Link href={`/inventory/opname/${opname.id}`}>
-                                                        <Button variant="secondary" className="!px-3 !py-1 text-xs">
-                                                            {opname.status === 'in_progress' ? 'Lanjutkan' : opname.status === 'submitted' && isOwner ? 'Review' : 'Detail'}
-                                                        </Button>
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                ) : (
-                                    <tr>
-                                        <td colSpan={isOwner ? 7 : 6} className="px-4 py-12 text-center text-text-secondary">
-                                            <svg className="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                            </svg>
-                                            Belum ada sesi stock opname
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Pagination */}
-                    {opnames.last_page > 1 && (
-                        <div className="p-4 border-t border-border flex justify-between items-center bg-white">
-                            <span className="text-sm text-text-secondary">
-                                Menampilkan {opnames.data.length} dari {opnames.total} data
-                            </span>
-                            <div className="flex space-x-1">
-                                {opnames.links?.map((link, idx) => (
-                                    <Link
-                                        key={idx}
-                                        href={link.url || '#'}
-                                        className={`px-3 py-1 text-sm rounded ${
-                                            link.active ? 'bg-primary text-white' : 'text-text-secondary hover:bg-gray-100'
-                                        } ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
-                                ))}
-                            </div>
-                        </div>
                     )}
                 </div>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500">
+                                <th className="px-6 py-4 font-medium">No. Sesi</th>
+                                <th className="px-6 py-4 font-medium">Lokasi / Pelaksana</th>
+                                <th className="px-6 py-4 font-medium">Status</th>
+                                {isOwner && <th className="px-6 py-4 font-medium text-right">Nilai Penyusutan</th>}
+                                <th className="px-6 py-4 font-medium">Tanggal Sesi</th>
+                                <th className="px-6 py-4 font-medium text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                            {opnames.data.length === 0 ? (
+                                <tr>
+                                    <td colSpan={isOwner ? 6 : 5} className="px-6 py-12 text-center text-gray-500">
+                                        <div className="flex flex-col items-center">
+                                            <svg className="w-12 h-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                            </svg>
+                                            <p className="text-base font-medium text-gray-900">Tidak ada sesi opname</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : (
+                                opnames.data.map((opname) => (
+                                    <tr key={opname.id} className="hover:bg-gray-50/50 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="font-semibold text-gray-900">{opname.opname_number}</div>
+                                            <div className="text-xs text-gray-500 mt-0.5">{opname.items_count || opname.items?.length || 0} items</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="font-medium text-gray-700">{opname.location?.name}</div>
+                                            <div className="text-xs text-gray-500 mt-0.5">{opname.conductor?.name}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <StatusBadge status={opname.status} />
+                                        </td>
+                                        {isOwner && (
+                                            <td className="px-6 py-4 text-right">
+                                                {opname.status !== 'in_progress' ? (
+                                                    <span className={`font-medium ${parseFloat(opname.total_shrinkage_value) > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                                                        {formatCurrency(opname.total_shrinkage_value || 0)}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-400 text-sm italic">Dalam proses</span>
+                                                )}
+                                            </td>
+                                        )}
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm text-gray-900">
+                                                {new Date(opname.opname_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <Link 
+                                                href={`/inventory/opname/${opname.id}`}
+                                                className={`inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                                                    opname.status === 'in_progress' && isStockist
+                                                        ? 'text-white bg-blue-600 hover:bg-blue-700 shadow-sm'
+                                                        : opname.status === 'submitted' && isOwner
+                                                            ? 'text-white bg-accent hover:bg-accent-hover shadow-sm'
+                                                            : 'text-primary bg-primary/10 hover:bg-primary/20'
+                                                }`}
+                                            >
+                                                {opname.status === 'in_progress' && isStockist ? 'Lanjut Hitung' : 
+                                                 opname.status === 'submitted' && isOwner ? 'Review' : 'Detail'}
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination */}
+                {opnames.links && opnames.links.length > 3 && (
+                    <div className="p-4 border-t border-gray-200 bg-gray-50 flex flex-wrap justify-center gap-1">
+                        {opnames.links.map((link, k) => (
+                            <Link
+                                key={k}
+                                href={link.url || '#'}
+                                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                                    link.active 
+                                        ? 'bg-primary text-white font-medium shadow-sm' 
+                                        : !link.url 
+                                            ? 'text-gray-400 cursor-not-allowed' 
+                                            : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                                }`}
+                                dangerouslySetInnerHTML={{ __html: link.label }}
+                                preserveState
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
         </AppLayout>
     );

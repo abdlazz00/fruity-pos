@@ -1,192 +1,156 @@
 import React from 'react';
+import AppLayout from '../../Layouts/AppLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import AppLayout from '@/Layouts/AppLayout';
-import Badge from '@/Components/Badge';
-import Button from '@/Components/Button';
+import StatusBadge from '../../Components/Inventory/StatusBadge';
 
-const statusConfig = {
-    pending:  { label: 'Pending',  variant: 'warning' },
-    approved: { label: 'Approved', variant: 'success' },
-    rejected: { label: 'Rejected', variant: 'danger' },
-};
-
-const reasonLabels = {
-    rotten: 'Busuk', damaged: 'Rusak Fisik', expired: 'Kadaluarsa', failed_qc: 'Gagal QC',
-};
-
-export default function WasteIndex({ wastes, locations = [], filters = {} }) {
+export default function WasteIndex({ wastes, filters }) {
     const { auth } = usePage().props;
-    const isOwner = auth?.user?.role === 'owner';
-    const isStockist = auth?.user?.role === 'stockist';
+    const isOwner = auth.user.role === 'owner';
+    const isStockist = auth.user.role === 'stockist';
 
-    const handleStatusFilter = (e) => {
-        router.get('/inventory/waste', {
-            status: e.target.value || undefined,
-        }, { preserveState: true, replace: true });
+    const handleFilterStatus = (status) => {
+        router.get('/inventory/waste', { ...filters, status, page: 1 }, { preserveState: true });
     };
 
-    const formatDate = (dateString) => {
-        if (!dateString) return '-';
-        return new Date(dateString).toLocaleDateString('id-ID', {
-            day: 'numeric', month: 'short', year: 'numeric',
-            hour: '2-digit', minute: '2-digit',
-        });
-    };
+    const statusTabs = [
+        { value: '', label: 'Semua' },
+        { value: 'pending', label: 'Pending' },
+        { value: 'approved', label: 'Approved' },
+        { value: 'rejected', label: 'Rejected' },
+    ];
 
-    const formatRp = (value) => {
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
-    };
+    const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
 
     return (
-        <AppLayout
-            title="Waste Management"
-            breadcrumbs={[
-                { label: 'Home', url: '/dashboard' },
-                { label: 'Waste Management' },
-            ]}
-        >
+        <AppLayout title="Waste Management" breadcrumbs={[{ label: 'Inventori' }, { label: 'Waste / Rusak', url: '/inventory/waste' }]}>
             <Head title="Waste Management" />
 
-            <div className="flex flex-col space-y-6">
-                <div className="flex justify-between items-center">
-                    <div>
-                        <h1 className="text-2xl font-semibold text-[#1C1C1C]">
-                            {isOwner ? 'Approval Waste Request' : 'Pengajuan Waste'}
-                        </h1>
-                        <p className="text-sm text-text-secondary mt-1">
-                            {isOwner
-                                ? 'Daftar pengajuan waste yang menunggu persetujuan Anda'
-                                : 'Kelola pengajuan barang rusak/kadaluarsa di toko Anda'
-                            }
-                        </p>
-                    </div>
-                    {isStockist && (
-                        <Link href="/inventory/waste/create">
-                            <Button variant="primary">+ Ajukan Waste Baru</Button>
-                        </Link>
-                    )}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Waste Management</h1>
+                    <p className="text-sm text-gray-500 mt-1">Catat dan laporkan barang rusak, busuk, atau kadaluarsa.</p>
                 </div>
+                
+                {isStockist && (
+                    <Link href="/inventory/waste/create" className="btn-primary flex items-center gap-2">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+                        Ajukan Waste Baru
+                    </Link>
+                )}
+            </div>
 
-                <div className="bg-white rounded-xl border border-border overflow-hidden">
-                    {/* Filters */}
-                    <div className="p-4 border-b border-border flex items-center gap-3 bg-gray-50/50">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-text-secondary">Filter Status:</span>
-                            <select
-                                className="border border-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20"
-                                value={filters.status || ''}
-                                onChange={handleStatusFilter}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="p-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between gap-4">
+                    {/* Status Tabs */}
+                    <div className="flex space-x-1 overflow-x-auto p-1 bg-gray-200/50 rounded-lg">
+                        {statusTabs.map(tab => (
+                            <button
+                                key={tab.value}
+                                onClick={() => handleFilterStatus(tab.value)}
+                                className={`px-4 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
+                                    (filters.status || '') === tab.value 
+                                        ? 'bg-white text-primary shadow-sm' 
+                                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
+                                }`}
                             >
-                                <option value="">Semua Status</option>
-                                <option value="pending">Pending</option>
-                                <option value="approved">Approved</option>
-                                <option value="rejected">Rejected</option>
-                            </select>
-                        </div>
-                        
-                        {isOwner && (
-                            <div className="flex items-center gap-2 ml-4">
-                                <span className="text-sm text-text-secondary">Lokasi:</span>
-                                <select
-                                    className="border border-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20"
-                                    value={filters.location_id || ''}
-                                    onChange={(e) => {
-                                        router.get('/inventory/waste', {
-                                            status: filters.status || undefined,
-                                            location_id: e.target.value || undefined,
-                                        }, { preserveState: true, replace: true });
-                                    }}
-                                >
-                                    <option value="">Semua Toko</option>
-                                    {locations.map(loc => (
-                                        <option key={loc.id} value={loc.id}>{loc.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
+                                {tab.label}
+                            </button>
+                        ))}
                     </div>
-
-                    {/* Table */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-primary text-white uppercase text-xs">
-                                    <th className="px-4 py-3 font-medium">No. Request</th>
-                                    {isOwner && <th className="px-4 py-3 font-medium">Lokasi</th>}
-                                    <th className="px-4 py-3 font-medium">Pengaju</th>
-                                    <th className="px-4 py-3 font-medium text-center">Items</th>
-                                    {isOwner && <th className="px-4 py-3 font-medium text-right">Total HPP</th>}
-                                    <th className="px-4 py-3 font-medium">Status</th>
-                                    <th className="px-4 py-3 font-medium">Tanggal</th>
-                                    <th className="px-4 py-3 font-medium text-right">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="text-sm divide-y divide-border">
-                                {wastes.data?.length > 0 ? (
-                                    wastes.data.map((waste, index) => {
-                                        const cfg = statusConfig[waste.status] || { label: waste.status, variant: 'default' };
-                                        const totalHpp = waste.items?.reduce((sum, i) => sum + parseFloat(i.hpp_value || 0), 0) || 0;
-                                        return (
-                                            <tr
-                                                key={waste.id}
-                                                className={`${index % 2 === 0 ? 'bg-white' : 'bg-[#F9FAFB]'} hover:bg-[#F0FDF4] transition-colors`}
-                                            >
-                                                <td className="px-4 py-3 font-mono text-text-secondary text-xs">{waste.request_number}</td>
-                                                {isOwner && <td className="px-4 py-3 font-medium">{waste.location?.name}</td>}
-                                                <td className="px-4 py-3 text-text-secondary">{waste.requester?.name}</td>
-                                                <td className="px-4 py-3 text-center">{waste.items?.length || 0}</td>
-                                                {isOwner && (
-                                                    <td className="px-4 py-3 text-right font-medium text-[#DC2626]">
-                                                        {formatRp(totalHpp)}
-                                                    </td>
-                                                )}
-                                                <td className="px-4 py-3"><Badge variant={cfg.variant}>{cfg.label}</Badge></td>
-                                                <td className="px-4 py-3 text-text-secondary text-xs">{formatDate(waste.created_at)}</td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <Link href={`/inventory/waste/${waste.id}`}>
-                                                        <Button variant="secondary" className="!px-3 !py-1 text-xs">
-                                                            {isOwner && waste.status === 'pending' ? 'Review' : 'Detail'}
-                                                        </Button>
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                ) : (
-                                    <tr>
-                                        <td colSpan={isOwner ? 8 : 6} className="px-4 py-12 text-center text-text-secondary">
-                                            <svg className="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                            {isOwner ? 'Tidak ada waste request yang menunggu approval' : 'Belum ada pengajuan waste'}
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Pagination */}
-                    {wastes.last_page > 1 && (
-                        <div className="p-4 border-t border-border flex justify-between items-center bg-white">
-                            <span className="text-sm text-text-secondary">
-                                Menampilkan {wastes.data.length} dari {wastes.total} data
-                            </span>
-                            <div className="flex space-x-1">
-                                {wastes.links?.map((link, idx) => (
-                                    <Link
-                                        key={idx}
-                                        href={link.url || '#'}
-                                        className={`px-3 py-1 text-sm rounded ${
-                                            link.active ? 'bg-primary text-white' : 'text-text-secondary hover:bg-gray-100'
-                                        } ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    )}
                 </div>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500">
+                                <th className="px-6 py-4 font-medium">No. Request</th>
+                                <th className="px-6 py-4 font-medium">Lokasi / Pengaju</th>
+                                <th className="px-6 py-4 font-medium">Status</th>
+                                {isOwner && <th className="px-6 py-4 font-medium text-right">Nilai HPP (Loss)</th>}
+                                <th className="px-6 py-4 font-medium">Tanggal</th>
+                                <th className="px-6 py-4 font-medium text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                            {wastes.data.length === 0 ? (
+                                <tr>
+                                    <td colSpan={isOwner ? 6 : 5} className="px-6 py-12 text-center text-gray-500">
+                                        <div className="flex flex-col items-center">
+                                            <svg className="w-12 h-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                            <p className="text-base font-medium text-gray-900">Tidak ada data waste</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : (
+                                wastes.data.map((waste) => {
+                                    // Hitung total HPP jika role owner
+                                    const totalHpp = waste.items?.reduce((sum, item) => sum + parseFloat(item.hpp_value || 0), 0) || 0;
+
+                                    return (
+                                        <tr key={waste.id} className="hover:bg-gray-50/50 transition-colors group">
+                                            <td className="px-6 py-4">
+                                                <div className="font-semibold text-gray-900">{waste.request_number}</div>
+                                                <div className="text-xs text-gray-500 mt-0.5">{waste.items_count || waste.items?.length || 0} items</div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="font-medium text-gray-700">{waste.location?.name}</div>
+                                                <div className="text-xs text-gray-500 mt-0.5">{waste.requester?.name}</div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <StatusBadge status={waste.status} />
+                                            </td>
+                                            {isOwner && (
+                                                <td className="px-6 py-4 text-right">
+                                                    <span className="font-medium text-red-600">{formatCurrency(totalHpp)}</span>
+                                                </td>
+                                            )}
+                                            <td className="px-6 py-4">
+                                                <div className="text-sm text-gray-900">
+                                                    {new Date(waste.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <Link 
+                                                    href={`/inventory/waste/${waste.id}`}
+                                                    className={`inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                                                        isOwner && waste.status === 'pending' 
+                                                            ? 'text-white bg-accent hover:bg-accent-hover shadow-sm'
+                                                            : 'text-primary bg-primary/10 hover:bg-primary/20'
+                                                    }`}
+                                                >
+                                                    {isOwner && waste.status === 'pending' ? 'Review' : 'Detail'}
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination */}
+                {wastes.links && wastes.links.length > 3 && (
+                    <div className="p-4 border-t border-gray-200 bg-gray-50 flex flex-wrap justify-center gap-1">
+                        {wastes.links.map((link, k) => (
+                            <Link
+                                key={k}
+                                href={link.url || '#'}
+                                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                                    link.active 
+                                        ? 'bg-primary text-white font-medium shadow-sm' 
+                                        : !link.url 
+                                            ? 'text-gray-400 cursor-not-allowed' 
+                                            : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                                }`}
+                                dangerouslySetInnerHTML={{ __html: link.label }}
+                                preserveState
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
         </AppLayout>
     );
