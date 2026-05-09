@@ -1,7 +1,3 @@
-// resources/js/Components/OfflineIndicator.jsx
-// S7-F09: Badge kecil di header/toolbar POS yang menunjukkan status koneksi
-// dan jumlah transaksi pending yang belum di-sync.
-
 import React from 'react';
 
 export default function OfflineIndicator({ isOnline, pendingCount, isSyncing, onSyncClick }) {

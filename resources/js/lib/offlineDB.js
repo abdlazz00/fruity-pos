@@ -1,7 +1,3 @@
-// resources/js/lib/offlineDB.js
-// S7-F05 & S7-F06: Dexie.js IndexedDB schema + CRUD operations
-// Digunakan untuk menyimpan catalog cache dan transaksi pending saat offline.
-
 import Dexie from 'dexie';
 
 const db = new Dexie('FruityPOS');
@@ -17,11 +13,7 @@ db.version(1).stores({
   pendingTransactions: '++id, offline_uuid, shift_id, status, created_at',
 });
 
-export default db;
-
-// ══════════════════════════════════════════
 // ── Catalog Cache ──
-// ══════════════════════════════════════════
 
 /**
  * Simpan seluruh catalog dari server ke IndexedDB.
@@ -69,9 +61,7 @@ export async function getOfflineCatalog() {
   });
 }
 
-// ══════════════════════════════════════════
 // ── Pending Transactions ──
-// ══════════════════════════════════════════
 
 /**
  * Simpan transaksi offline ke IndexedDB (queue).
@@ -120,3 +110,5 @@ export async function countPending() {
     .equals('pending')
     .count();
 }
+
+export default db;

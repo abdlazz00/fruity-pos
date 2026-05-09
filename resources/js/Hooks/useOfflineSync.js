@@ -1,8 +1,3 @@
-// resources/js/Hooks/useOfflineSync.js
-// S7-F07: Custom React hook untuk mendeteksi status koneksi,
-// auto-sync pending transactions saat kembali online,
-// dan expose fungsi manual sync + pending count untuk UI indicator.
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import {
@@ -59,7 +54,7 @@ export default function useOfflineSync() {
         return { synced: 0, message: 'Tidak ada transaksi pending.' };
       }
 
-      // Kirim batch ke backend (max 50 per request sesuai backend limit)
+      // Kirim batch ke backend
       const payload = {
         transactions: pending.map(tx => ({
           offline_uuid: tx.offline_uuid,
