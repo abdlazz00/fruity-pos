@@ -7,6 +7,7 @@ use App\Models\ProductPrice;
 use App\Repositories\Contracts\TransactionRepositoryInterface;
 use App\Repositories\Contracts\InventoryRepositoryInterface;
 use App\Repositories\Contracts\ShiftRepositoryInterface;
+use App\Events\StockDeducted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -128,6 +129,12 @@ class TransactionService
                 'total'       => $total,
             ]);
 
+            // Sprint 9: Fire StockDeducted for reorder point checks (FR-1211)
+            event(new StockDeducted(
+                collect($resolvedItems)->pluck('product_id')->unique()->values()->toArray(),
+                $locationId
+            ));
+
             return $transaction->load('items');
         });
     }
@@ -214,6 +221,12 @@ class TransactionService
                 'total'       => $total,
                 'platform'    => $data['platform'] ?? '-',
             ]);
+
+            // Sprint 9: Fire StockDeducted for reorder point checks (FR-1211)
+            event(new StockDeducted(
+                collect($resolvedItems)->pluck('product_id')->unique()->values()->toArray(),
+                $locationId
+            ));
 
             return $transaction->load('items');
         });

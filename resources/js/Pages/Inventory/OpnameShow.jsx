@@ -271,7 +271,7 @@ export default function OpnameShow({ opname }) {
                                         Laporan Penyusutan
                                     </h2>
                                 </div>
-                                <div className="p-5 bg-gradient-to-br from-white to-gray-50">
+                                <div className="p-5 bg-linear-to-br from-white to-gray-50">
                                     <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-2">Total Nilai Barang Hilang</p>
                                     <p className={`text-3xl font-black tracking-tight ${parseFloat(opname.total_shrinkage_value) > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                                         {formatCurrency(opname.total_shrinkage_value || 0)}

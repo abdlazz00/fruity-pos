@@ -8,6 +8,7 @@ use App\Repositories\Contracts\WasteRepositoryInterface;
 use App\Repositories\Contracts\InventoryRepositoryInterface;
 use App\Events\WasteSubmitted;
 use App\Events\WasteApproved;
+use App\Events\StockDeducted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -125,6 +126,12 @@ class WasteService
             ]);
 
             event(new WasteApproved($waste->load('items.product', 'location')));
+
+            // Sprint 9: Fire StockDeducted for reorder point checks (FR-1211)
+            event(new StockDeducted(
+                $waste->items->pluck('product_id')->unique()->values()->toArray(),
+                $waste->location_id
+            ));
 
             Log::info("Waste request {$waste->request_number} approved by Owner {$ownerId}");
 

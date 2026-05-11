@@ -8,6 +8,7 @@ use App\Repositories\Contracts\MutationRepositoryInterface;
 use App\Repositories\Contracts\InventoryRepositoryInterface;
 use App\Events\MutationShipped;
 use App\Events\MutationReceived;
+use App\Events\StockDeducted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -101,6 +102,12 @@ class MutationService
             ]);
 
             event(new MutationShipped($mutation));
+
+            // Sprint 9: Fire StockDeducted for reorder point checks at source location (FR-1211)
+            event(new StockDeducted(
+                $mutation->items->pluck('product_id')->unique()->values()->toArray(),
+                $mutation->from_location_id
+            ));
 
             Log::info("Mutation {$mutation->mutation_number} shipped");
 

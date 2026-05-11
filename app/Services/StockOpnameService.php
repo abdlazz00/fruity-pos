@@ -7,6 +7,7 @@ use App\Models\StockOpnameItem;
 use App\Models\Inventory;
 use App\Repositories\Contracts\OpnameRepositoryInterface;
 use App\Repositories\Contracts\InventoryRepositoryInterface;
+use App\Events\StockDeducted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -196,6 +197,18 @@ class StockOpnameService
             ]);
 
             Log::info("Opname {$opname->opname_number} approved by Owner {$ownerId}. Stock adjusted.");
+
+            // Sprint 9: Fire StockDeducted for items whose stock decreased (FR-1211)
+            $deductedProductIds = $opname->items
+                ->filter(fn($item) => (float) $item->difference < 0)
+                ->pluck('product_id')
+                ->unique()
+                ->values()
+                ->toArray();
+
+            if (!empty($deductedProductIds)) {
+                event(new StockDeducted($deductedProductIds, $opname->location_id));
+            }
 
             return $opname;
         });

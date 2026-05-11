@@ -52,6 +52,21 @@ export default function Sidebar({ isCollapsed, setCollapsed }) {
                 { label: 'Mutasi Stok', url: '/inventory/mutations' },
                 { label: 'Waste / Rusak', url: '/inventory/waste' },
                 { label: 'Stock Opname', url: '/inventory/opname' },
+                { label: 'Reorder Point', url: '/inventory/reorder-points' },
+            ]
+        },
+        { 
+            label: 'Laporan', 
+            icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+            submenus: [
+                { label: 'Laba Rugi', url: '/reports/profit-loss' },
+                { label: 'Penjualan', url: '/reports/sales' },
+                { label: 'Laporan Stok', url: '/reports/inventory' },
+                { label: 'Laporan Waste', url: '/reports/waste' },
+                { label: 'Laporan Shift', url: '/reports/shifts' },
+                { label: 'Laporan Diskon', url: '/reports/discounts' },
+                { label: 'Biaya Ongkir', url: '/reports/shipping-costs' },
+                { label: 'Komparasi HPP', url: '/reports/hpp-comparison' },
             ]
         },
         { label: 'Kelola Toko', url: '/stores', icon: 'M3 21h18 M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16 M9 21v-5a2 2 0 012-2h2a2 2 0 012 2v5' },
@@ -86,18 +101,22 @@ export default function Sidebar({ isCollapsed, setCollapsed }) {
                 { label: 'Mutasi Stok', url: '/inventory/mutations' },
                 { label: 'Waste / Rusak', url: '/inventory/waste' },
                 { label: 'Stock Opname', url: '/inventory/opname' },
+                { label: 'Reorder Point', url: '/inventory/reorder-points' },
             ]
         },
+        { label: 'Laporan Shift Saya', url: '/reports/shifts', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
     ];
 
     const kasirMenu = [
         { label: 'POS Offline', url: '/pos/offline', icon: 'M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-1.5 6h11.2M9 20a1 1 0 100-2 1 1 0 000 2zm7 0a1 1 0 100-2 1 1 0 000 2z' },
-        { label: 'Shift Saya', url: '/shift', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+        { label: 'Sesi Aktif', url: '/shift', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+        { label: 'Laporan Shift Saya', url: '/reports/shifts', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
     ];
 
     const adminMenu = [
         { label: 'POS Online', url: '/pos/online', icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9' },
-        { label: 'Shift Saya', url: '/shift', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+        { label: 'Sesi Aktif', url: '/shift', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+        { label: 'Laporan Shift Saya', url: '/reports/shifts', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
     ];
 
     let menus = [];

@@ -31,9 +31,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/change-password', [AuthController::class, 'updatePassword'])->name('password.change.post');
 
     Route::middleware(RoleMiddleware::class . ':owner')->group(function () {
-        Route::get('/dashboard', function () {
-            return Inertia::render('Dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+
+        // API: KPI data refresh
+        Route::get('/api/dashboard/kpi', [\App\Http\Controllers\DashboardController::class, 'kpiApi'])->name('dashboard.kpi');
 
         // Stores
         Route::get('/stores', [\App\Http\Controllers\StoreController::class, 'index'])->name('stores.index');
@@ -61,6 +62,15 @@ Route::middleware('auth')->group(function () {
         Route::put('/pricing/{price}/tiers', [\App\Http\Controllers\PricingController::class, 'syncTiers'])->name('pricing.tiers');
         Route::get('/api/pricing/breakdown/{product}', [\App\Http\Controllers\PricingController::class, 'breakdown'])->name('pricing.breakdown');
         Route::post('/api/pricing/preview', [\App\Http\Controllers\PricingController::class, 'preview'])->name('pricing.preview');
+
+        // ── Reports (Sprint 9 — Owner only) ──
+        Route::get('/reports/profit-loss', [\App\Http\Controllers\ReportController::class, 'profitLoss'])->name('reports.profit-loss');
+        Route::get('/reports/sales', [\App\Http\Controllers\ReportController::class, 'sales'])->name('reports.sales');
+        Route::get('/reports/inventory', [\App\Http\Controllers\ReportController::class, 'inventory'])->name('reports.inventory');
+        Route::get('/reports/waste', [\App\Http\Controllers\ReportController::class, 'waste'])->name('reports.waste');
+        Route::get('/reports/discounts', [\App\Http\Controllers\ReportController::class, 'discounts'])->name('reports.discounts');
+        Route::get('/reports/shipping-costs', [\App\Http\Controllers\ReportController::class, 'shippingCosts'])->name('reports.shipping-costs');
+        Route::get('/reports/hpp-comparison', [\App\Http\Controllers\ReportController::class, 'hppComparison'])->name('reports.hpp-comparison');
     });
 
     Route::middleware(RoleMiddleware::class . ':owner,stockist')->group(function () {
@@ -118,6 +128,9 @@ Route::middleware('auth')->group(function () {
             'unread_count'  => $request->user()->unreadNotifications()->count(),
         ]);
     })->name('notifications.index');
+
+    // ── Shift Report (all roles, scoped by FR-907 in controller) ──
+    Route::get('/reports/shifts', [\App\Http\Controllers\ReportController::class, 'shifts'])->name('reports.shifts');
 
     Route::post('/api/notifications/mark-read', function (Illuminate\Http\Request $request) {
         $request->user()->unreadNotifications->markAsRead();
@@ -187,5 +200,21 @@ Route::middleware('auth')->group(function () {
     Route::middleware(RoleMiddleware::class . ':owner')->group(function () {
         Route::patch('/inventory/opname/{id}/approve', [\App\Http\Controllers\OpnameController::class, 'approve'])->name('opname.approve');
     });
+
+    // ══════════════════════════════════════════════════════════
+    // ── Sprint 9: Reorder Point (FR-1207 s/d FR-1215) ──
+    // ══════════════════════════════════════════════════════════
+
+    Route::middleware(RoleMiddleware::class . ':owner,stockist')->group(function () {
+        Route::get('/inventory/reorder-points', [\App\Http\Controllers\ReorderPointController::class, 'index'])->name('reorder-points.index');
+        Route::get('/inventory/reorder-points/create', [\App\Http\Controllers\ReorderPointController::class, 'create'])->name('reorder-points.create');
+        Route::post('/inventory/reorder-points', [\App\Http\Controllers\ReorderPointController::class, 'store'])->name('reorder-points.store');
+        Route::put('/inventory/reorder-points/{id}', [\App\Http\Controllers\ReorderPointController::class, 'update'])->name('reorder-points.update');
+        Route::patch('/inventory/reorder-points/{id}/toggle', [\App\Http\Controllers\ReorderPointController::class, 'toggle'])->name('reorder-points.toggle');
+        Route::delete('/inventory/reorder-points/{id}', [\App\Http\Controllers\ReorderPointController::class, 'destroy'])->name('reorder-points.destroy');
+    });
+
+    // ── API: Low Stock Alerts (Dashboard FR-1213) ──
+    Route::get('/api/reorder-points/low-stock', [\App\Http\Controllers\ReorderPointController::class, 'lowStockAlerts'])->name('reorder-points.low-stock');
 
 });

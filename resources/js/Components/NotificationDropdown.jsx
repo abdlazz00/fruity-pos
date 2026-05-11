@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { usePage } from '@inertiajs/react';
 
 export default function NotificationDropdown() {
+    const { auth } = usePage().props;
+    const user = auth?.user;
+    
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
@@ -20,10 +24,40 @@ export default function NotificationDropdown() {
     useEffect(() => {
         fetchNotifications();
         
-        // Polling every 30 seconds as fallback for real-time
-        const interval = setInterval(fetchNotifications, 30000);
-        return () => clearInterval(interval);
-    }, []);
+        // Listen to Laravel Echo if window.Echo is available
+        if (window.Echo && user) {
+            const channels = [];
+
+            // Add owner channel if user is owner
+            if (user.role === 'owner') {
+                channels.push(window.Echo.channel('alerts.owner'));
+            }
+
+            // Add location channel if user belongs to a location (like stockist)
+            if (user.location_id) {
+                channels.push(window.Echo.channel(`alerts.location.${user.location_id}`));
+            }
+
+            channels.forEach(channel => {
+                channel.listen('.low-stock', (e) => {
+                    // Update state to trigger UI changes without full page reload
+                    setUnreadCount(prev => prev + 1);
+                    
+                    // We also fetch notifications to get the properly formatted DB record
+                    fetchNotifications();
+                });
+            });
+
+            return () => {
+                if (user.role === 'owner') window.Echo.leaveChannel('alerts.owner');
+                if (user.location_id) window.Echo.leaveChannel(`alerts.location.${user.location_id}`);
+            };
+        } else {
+            // Polling as fallback if Echo is not available
+            const interval = setInterval(fetchNotifications, 60000);
+            return () => clearInterval(interval);
+        }
+    }, [user]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -84,7 +118,7 @@ export default function NotificationDropdown() {
             {isOpen && (
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-border overflow-hidden z-50">
                     <div className="px-4 py-3 border-b border-border bg-gray-50 flex justify-between items-center">
-                        <h3 className="text-sm font-semibold text-[#1C1C1C]">Notifikasi</h3>
+                        <h3 className="text-sm font-semibold text-text-primary">Notifikasi</h3>
                     </div>
                     
                     <div className="max-h-[400px] overflow-y-auto">
@@ -99,13 +133,19 @@ export default function NotificationDropdown() {
                                     const data = notif.data || {};
                                     
                                     return (
-                                        <div key={notif.id} className={`p-4 transition-colors ${isUnread ? 'bg-[#F0FDF4]/50' : 'hover:bg-gray-50'}`}>
+                                        <div key={notif.id} className={`p-4 transition-colors ${isUnread ? 'bg-success-bg/50' : 'hover:bg-gray-50'}`}>
                                             <div className="flex gap-3">
-                                                <div className="mt-1 flex-shrink-0">
+                                                <div className="mt-1 shrink-0">
                                                     {data.type === 'inbound_received' ? (
                                                         <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent">
                                                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                            </svg>
+                                                        </div>
+                                                    ) : data.type === 'low_stock_alert' ? (
+                                                        <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                                             </svg>
                                                         </div>
                                                     ) : (
@@ -115,7 +155,7 @@ export default function NotificationDropdown() {
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm text-[#1C1C1C]">
+                                                    <p className="text-sm text-text-primary">
                                                         {data.message || 'Anda memiliki pemberitahuan baru.'}
                                                     </p>
                                                     <span className="text-xs text-text-muted mt-1 block">

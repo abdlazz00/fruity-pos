@@ -32,6 +32,10 @@ class EventServiceProvider extends ServiceProvider
         \App\Events\WasteApproved::class => [
             \App\Listeners\RecalculateHppBaseline::class,
         ],
+        // ── Sprint 9: Reorder Point ──
+        \App\Events\StockDeducted::class => [
+            \App\Listeners\CheckReorderPoint::class,
+        ],
     ];
 
     /**

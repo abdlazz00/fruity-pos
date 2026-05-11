@@ -19,7 +19,7 @@ Pemilik bisnis (Owner) memiliki visibilitas penuh ke seluruh cabang melalui dash
 6. **🔄 Mutasi Stok**: Transfer horizontal antar-toko secara *peer-to-peer* disertai *WAC recalculation* di lokasi tujuan.
 7. **🗑️ Waste Management**: Pengajuan pembuangan buah rusak dengan sistem approval bertingkat ke Owner.
 8. **📋 Stock Opname**: Audit inventori fisik secara berkala untuk penyesuaian sistem dengan stok riil.
-9. **📈 Dashboard & Laporan**: Laporan P&L (laba-rugi), performa per kanal, stok, HPP, diskon, dan *reorder-points*.
+9. **📈 Dashboard & Laporan**: Laporan P&L (laba-rugi), performa per kanal, stok, HPP, diskon, dan *reorder-points*. Dilengkapi **Real-time Notifications** via WebSockets.
 10. **👥 Manajemen Pengguna**: Role-based Access Control (RBAC) dengan 4 level akses.
 11. **🏪 Manajemen Toko**: Manajemen multi-cabang dengan isolasi *LocationScope*, memastikan setiap cabang beroperasi di koridor datanya masing-masing.
 
@@ -36,13 +36,13 @@ Aplikasi ini mendefinisikan 4 kategori pengguna:
 Sistem dibangun menggunakan arsitektur monolit modern dengan implementasi **Service-Repository Pattern** untuk meredam kompleksitas logika bisnis yang rumit (seperti WAC dan sinkronisasi offline).
 
 *   **Backend:** Laravel 11 (PHP)
-*   **Frontend:** React 18, Tailwind CSS 3
+*   **Frontend:** React 19, Tailwind CSS 4
 *   **Bridge Layer:** Inertia.js
 *   **Database Engine:** MySQL 8
-*   **Cache & Queue:** Redis 7
+*   **Cache & Queue:** Redis 7 / Database
 *   **Offline Mode:** Dexie.js (IndexedDB) + Workbox Service Worker
-*   **Realtime Events:** Laravel Echo + Soketi
-*   **Bundler:** Vite 5
+*   **Realtime Events:** Laravel Echo + Pusher / Soketi
+*   **Bundler:** Vite 6
 *   **Auth:** Laravel Sanctum
 
 ## 🚀 Instalasi & Setup (Development)
@@ -61,20 +61,27 @@ Proses instalasi dibagi ke dalam beberapa langkah sederhana. Pastikan Anda memil
    composer install
    php artisan key:generate
    ```
-3. **Konfigurasi Environment Database & Email (OTP, Notifikasi)**
-   Buka file `.env` yang baru saja dibuat. Hubungkan ke MySQL, Redis, dan SMTP Gmail (Wajib untuk fitur Forgot Password OTP):
+3. **Konfigurasi Environment Database, Email, & Websockets**
+   Buka file `.env` yang baru saja dibuat. Hubungkan ke MySQL, SMTP Gmail, dan set up kredensial Pusher:
    ```dotenv
    # Database
    DB_CONNECTION=mysql
-   DB_HOST=127.0.0.1
-   DB_PORT=3306
    DB_DATABASE=fruitypos
    DB_USERNAME=root
    DB_PASSWORD=
 
-   # Queue & Session
-   QUEUE_CONNECTION=sync # Ubah ke 'redis' untuk production
-   SESSION_DRIVER=database # atau 'redis'
+   # Queue & Broadcasting
+   QUEUE_CONNECTION=database 
+   BROADCAST_CONNECTION=pusher
+
+   # Pusher Config (Ganti dengan kredensial Pusher.com Anda)
+   PUSHER_APP_ID="MASUKKAN_APP_ID"
+   PUSHER_APP_KEY="MASUKKAN_APP_KEY"
+   PUSHER_APP_SECRET="MASUKKAN_APP_SECRET"
+   PUSHER_HOST=
+   PUSHER_PORT=443
+   PUSHER_SCHEME=https
+   PUSHER_APP_CLUSTER="ap1"
 
    # SMTP Configuration (Wajib untuk OTP & Notifikasi Sistem)
    MAIL_MAILER=smtp
@@ -82,11 +89,8 @@ Proses instalasi dibagi ke dalam beberapa langkah sederhana. Pastikan Anda memil
    MAIL_PORT=465
    MAIL_USERNAME="<alamat-email-gmail-anda>"
    MAIL_PASSWORD="<app-password-gmail-anda>"
-   MAIL_ENCRYPTION=tls
-   MAIL_FROM_ADDRESS="<alamat-email-gmail-anda>"
-   MAIL_FROM_NAME="FruityPOS System"
+   MAIL_ENCRYPTION=ssl
    ```
-   > **Catatan:** Untuk `MAIL_PASSWORD`, pastikan Anda menggunakan **App Password** dari rincian keamanan Akun Google Anda jika fitur *2-Step Verification* aktif.
 
 4. **Jalankan Migrasi Database & Seeder Data Awal**
    Proses ini akan membentuk tabel-tabel penting beserta Role, Toko Dummy, dan Akun Owner utama aplikasi.
@@ -103,17 +107,12 @@ Proses instalasi dibagi ke dalam beberapa langkah sederhana. Pastikan Anda memil
    npm install
    ```
 7. **Jalankan Aplikasi Development Server**
-   Anda membutuhkan dua jendela antarmuka perintah (terminal) secara bersamaan.
-   - Terminal 1 (Servis Backend PHP):
-     ```bash
-     php artisan serve
-     ```
-   - Terminal 2 (Proses HMR Frontend Vite):
-     ```bash
-     npm run dev
-     # (Jika Vite error mengenai path import `@/*`, pastikan terminal berada di root ProjectPWII)
-     ```
-   Aplikasi secara default dapat diakses melalui browser pada `http://localhost:8000`.
+   Untuk kemudahan, versi terbaru sudah dilengkapi dengan perintah `dev` yang akan menjalankan *PHP Server*, *Queue Listener*, dan *Vite* secara bersamaan (dibantu oleh modul `concurrently`).
+   Cukup jalankan satu perintah berikut di terminal:
+   ```bash
+   composer run dev
+   ```
+   Aplikasi secara otomatis dapat diakses melalui browser pada `http://localhost:8000`.
 
 ---
 *Dokumen ini dikembangkan & diturunkan dari Spesifikasi Kebutuhan Perangkat Lunak (SRS) FruityPOS v2.0 Final Blueprint.*

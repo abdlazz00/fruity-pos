@@ -71,6 +71,10 @@ class AppServiceProvider extends ServiceProvider
             \App\Repositories\Contracts\OpnameRepositoryInterface::class,
             \App\Repositories\OpnameRepository::class
         );
+        $this->app->bind(
+            \App\Repositories\Contracts\ReorderPointRepositoryInterface::class,
+            \App\Repositories\ReorderPointRepository::class
+        );
     }
 
     /**

@@ -104,7 +104,7 @@ class OfflineSyncService
                     'errors' => $e->errors(),
                 ]);
 
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 $results[] = [
                     'index'        => $index,
                     'offline_uuid' => $offlineUuid,
