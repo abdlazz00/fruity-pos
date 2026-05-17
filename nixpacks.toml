@@ -1,1 +1,1 @@
-providers = ["php", "node"]
+providers = ["php"]
