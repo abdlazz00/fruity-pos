@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\ReorderPoint;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
 /**
@@ -11,10 +12,16 @@ use Illuminate\Notifications\Notification;
  *
  * Sent to Stockists of the affected location and all Owners
  * when a product's stock falls below its configured reorder point.
+ *
+ * Implements ShouldQueue so notification DB write does not block
+ * the POS checkout HTTP response cycle.
  */
-class LowStockNotification extends Notification
+class LowStockNotification extends Notification implements ShouldQueue
 {
     use Queueable;
+
+    public int $tries   = 3;
+    public int $backoff = 5;
 
     public ReorderPoint $reorderPoint;
     public float $currentStock;

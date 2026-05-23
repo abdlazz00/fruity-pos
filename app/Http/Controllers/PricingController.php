@@ -27,10 +27,12 @@ class PricingController extends Controller
         $prices = $this->pricingService->getPaginatedPrices($status);
 
         // Products that don't have a price record yet
-        $pricedProductIds = \App\Models\ProductPrice::pluck('product_id')->toArray();
+        // Performance fix: whereDoesntHave() uses an efficient SQL subquery
+        // instead of loading all priced product IDs into PHP memory
         $unpricedProducts = Product::where('is_active', true)
-            ->whereNotIn('id', $pricedProductIds)
+            ->whereDoesntHave('price')
             ->with('category')
+            ->orderBy('name')
             ->get();
 
         if ($request->wantsJson()) {

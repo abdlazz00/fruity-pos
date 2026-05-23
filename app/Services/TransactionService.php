@@ -242,10 +242,26 @@ class TransactionService
      * - Validate stock availability at the location
      * - Apply tier pricing if applicable
      * - Return array of resolved items with snapshot data
+     *
+     * Performance fix: pre-fetch all prices and inventories before the loop
+     * to avoid N+1 queries (previously 2 queries per cart item).
      */
     protected function resolveItems(array $items, int $locationId): array
     {
-        $resolved = [];
+        $resolved   = [];
+        $productIds = collect($items)->pluck('product_id')->unique()->values()->toArray();
+
+        // Bulk-fetch all needed prices and inventories in 2 queries
+        $priceMap = ProductPrice::where('status', 'locked')
+            ->with(['product', 'tiers'])
+            ->whereIn('product_id', $productIds)
+            ->get()
+            ->keyBy('product_id');
+
+        $inventoryMap = \App\Models\Inventory::where('location_id', $locationId)
+            ->whereIn('product_id', $productIds)
+            ->get()
+            ->keyBy('product_id');
 
         foreach ($items as $item) {
             $productId = $item['product_id'];
@@ -257,11 +273,8 @@ class TransactionService
                 ]);
             }
 
-            // Get locked price
-            $price = ProductPrice::where('product_id', $productId)
-                ->where('status', 'locked')
-                ->with(['product', 'tiers'])
-                ->first();
+            // Get locked price from pre-fetched map
+            $price = $priceMap->get($productId);
 
             if (!$price) {
                 throw ValidationException::withMessages([
@@ -269,8 +282,8 @@ class TransactionService
                 ]);
             }
 
-            // Check stock
-            $inventory = $this->inventoryRepo->getByProductAndLocation($productId, $locationId);
+            // Check stock from pre-fetched map
+            $inventory = $inventoryMap->get($productId);
             if (!$inventory || (float) $inventory->quantity < $qty) {
                 $available = $inventory ? $inventory->quantity : 0;
                 throw ValidationException::withMessages([
@@ -325,6 +338,9 @@ class TransactionService
     /**
      * Get catalog of products available for POS at a specific location.
      * Only products with locked prices AND stock > 0 at this location.
+     *
+     * Performance fix: pre-load all inventories in one query before iterating
+     * to avoid N+1 (previously 1 query per product).
      */
     public function getCatalog(int $locationId): array
     {
@@ -332,14 +348,16 @@ class TransactionService
             ->with(['product.category', 'tiers'])
             ->get();
 
+        // Bulk-load inventories for all products in one query
+        $inventoryMap = \App\Models\Inventory::where('location_id', $locationId)
+            ->whereIn('product_id', $lockedPrices->pluck('product_id'))
+            ->get()
+            ->keyBy('product_id');
+
         $catalog = [];
 
         foreach ($lockedPrices as $price) {
-            $inventory = $this->inventoryRepo->getByProductAndLocation(
-                $price->product_id,
-                $locationId
-            );
-
+            $inventory = $inventoryMap->get($price->product_id);
             $stock = $inventory ? (float) $inventory->quantity : 0;
 
             $catalog[] = [

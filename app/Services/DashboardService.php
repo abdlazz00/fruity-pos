@@ -282,30 +282,25 @@ class DashboardService
     // Helper: Low Stock Count
     // ─────────────────────────────────────────────
 
+    /**
+     * Helper: Count products below their reorder point threshold.
+     *
+     * Performance fix: single JOIN query instead of N+1 PHP loop.
+     * Previously loaded all reorder points then queried Inventory per row.
+     */
     private function getLowStockCount(?int $locationId = null): int
     {
-        $query = ReorderPoint::where('is_active', true)
-            ->with(['product', 'location']);
+        $query = ReorderPoint::where('reorder_points.is_active', true)
+            ->join('inventories', function ($join) {
+                $join->on('inventories.product_id', '=', 'reorder_points.product_id')
+                     ->on('inventories.location_id', '=', 'reorder_points.location_id');
+            })
+            ->whereRaw('inventories.quantity <= reorder_points.min_quantity');
 
         if ($locationId) {
-            $query->where('location_id', $locationId);
+            $query->where('reorder_points.location_id', $locationId);
         }
 
-        $reorderPoints = $query->get();
-
-        $lowStockCount = 0;
-        foreach ($reorderPoints as $rp) {
-            $inventory = Inventory::where('product_id', $rp->product_id)
-                ->where('location_id', $rp->location_id)
-                ->first();
-
-            $currentQty = $inventory ? (float) $inventory->quantity : 0;
-
-            if ($currentQty <= (float) $rp->min_quantity) {
-                $lowStockCount++;
-            }
-        }
-
-        return $lowStockCount;
+        return $query->count();
     }
 }

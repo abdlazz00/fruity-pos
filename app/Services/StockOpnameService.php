@@ -105,6 +105,19 @@ class StockOpnameService
                 throw new \RuntimeException("Opname hanya bisa diisi saat status 'in_progress'. Status saat ini: {$opname->status}");
             }
 
+            // Pre-load all inventories in one query instead of N+1
+            $productIds   = collect($counts)->pluck('product_id')
+                ->filter()
+                ->merge($opname->items->pluck('product_id'))
+                ->unique()
+                ->values()
+                ->toArray();
+
+            $inventoryMap = Inventory::where('location_id', $locationId)
+                ->whereIn('product_id', $productIds)
+                ->get()
+                ->keyBy('product_id');
+
             foreach ($counts as $count) {
                 $item = $opname->items->where('id', $count['item_id'])->first();
                 if (!$item) continue;
@@ -113,11 +126,8 @@ class StockOpnameService
                 $difference  = $physicalQty - (float) $item->system_quantity;
 
                 // Calculate shrinkage value: |difference| × avg_cost (FR-803)
-                $inventory = $this->inventoryRepo->getByProductAndLocation(
-                    $item->product_id,
-                    $locationId
-                );
-                $avgCost = $inventory ? (float) $inventory->avg_cost : 0;
+                $inventory      = $inventoryMap->get($item->product_id);
+                $avgCost        = $inventory ? (float) $inventory->avg_cost : 0;
                 $shrinkageValue = abs($difference) * $avgCost;
 
                 $item->update([
@@ -172,21 +182,24 @@ class StockOpnameService
                 throw new \RuntimeException("Opname hanya bisa di-approve dari status 'submitted'. Status saat ini: {$opname->status}");
             }
 
+            // Pre-load all inventories for items with differences in one query
+            $itemsWithDiff = $opname->items->filter(fn($item) => (float) $item->difference != 0);
+
+            $inventoryMap = Inventory::where('location_id', $opname->location_id)
+                ->whereIn('product_id', $itemsWithDiff->pluck('product_id'))
+                ->get()
+                ->keyBy('product_id');
+
             // Adjust inventory quantities (S8-B16)
             // avg_cost TIDAK berubah — hanya qty yang di-adjust (FR-805)
-            foreach ($opname->items as $item) {
-                if ((float) $item->difference != 0) {
-                    $inventory = $this->inventoryRepo->getByProductAndLocation(
-                        $item->product_id,
-                        $opname->location_id
-                    );
+            foreach ($itemsWithDiff as $item) {
+                $inventory = $inventoryMap->get($item->product_id);
 
-                    if ($inventory) {
-                        // Set quantity to the physical count directly
-                        $inventory->update([
-                            'quantity' => (float) $item->physical_quantity,
-                        ]);
-                    }
+                if ($inventory) {
+                    // Set quantity to the physical count directly
+                    $inventory->update([
+                        'quantity' => (float) $item->physical_quantity,
+                    ]);
                 }
             }
 

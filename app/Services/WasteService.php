@@ -58,7 +58,16 @@ class WasteService
      */
     public function submit(array $data, int $userId, int $locationId): WasteRequest
     {
-        return DB::transaction(function () use ($data, $userId, $locationId) {
+        // Upload all photos BEFORE opening the DB transaction.
+        // Prevents holding DB lock open during disk/network I/O.
+        $uploadedPaths = [];
+        foreach ($data['items'] as $i => $item) {
+            if (!empty($item['photo'])) {
+                $uploadedPaths[$i] = $item['photo']->store('waste-photos', 'public');
+            }
+        }
+
+        return DB::transaction(function () use ($data, $userId, $locationId, $uploadedPaths) {
             $waste = $this->wasteRepo->create([
                 'request_number' => WasteRequest::generateRequestNumber($locationId),
                 'location_id'    => $locationId,
@@ -66,24 +75,28 @@ class WasteService
                 'status'         => 'pending',
             ]);
 
-            foreach ($data['items'] as $item) {
+            // Bulk-load inventories before the loop to avoid N+1
+            $productIds   = collect($data['items'])->pluck('product_id')->toArray();
+            $inventoryMap = $this->inventoryRepo instanceof \App\Repositories\InventoryRepository
+                ? \App\Models\Inventory::where('location_id', $locationId)
+                    ->whereIn('product_id', $productIds)
+                    ->get()
+                    ->keyBy('product_id')
+                : collect();
+
+            foreach ($data['items'] as $i => $item) {
                 // Calculate HPP value: qty × avg_cost at this location
-                $inventory = $this->inventoryRepo->getByProductAndLocation(
-                    $item['product_id'],
-                    $locationId
-                );
+                $inventory = $inventoryMap->get($item['product_id'])
+                    ?? $this->inventoryRepo->getByProductAndLocation($item['product_id'], $locationId);
                 $avgCost  = $inventory ? (float) $inventory->avg_cost : 0;
                 $hppValue = (float) $item['quantity'] * $avgCost;
-
-                // Store photo (S8-B10)
-                $photoPath = $item['photo']->store('waste-photos', 'public');
 
                 WasteRequestItem::create([
                     'waste_request_id' => $waste->id,
                     'product_id'       => $item['product_id'],
                     'quantity'         => $item['quantity'],
                     'reason'           => $item['reason'],
-                    'photo_path'       => $photoPath,
+                    'photo_path'       => $uploadedPaths[$i] ?? null,
                     'hpp_value'        => $hppValue,
                 ]);
             }
