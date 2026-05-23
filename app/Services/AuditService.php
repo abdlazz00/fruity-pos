@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\LogAuditJob;
 use App\Repositories\Contracts\AuditRepositoryInterface;
 use Illuminate\Support\Facades\Auth;
 
@@ -14,6 +15,9 @@ class AuditService
         $this->repository = $repository;
     }
 
+    /**
+     * Log login action synchronously (security audit - must be instant).
+     */
     public function logLogin($userId, $ipAddress)
     {
         return $this->repository->log([
@@ -23,9 +27,12 @@ class AuditService
         ]);
     }
 
+    /**
+     * Log CRUD actions asynchronously via Redis Queue.
+     */
     public function logAction($action, $model, $changes = null, $userId = null, $ipAddress = null)
     {
-        return $this->repository->log([
+        LogAuditJob::dispatch([
             'user_id' => $userId ?? Auth::id(),
             'action' => $action,
             'model_type' => get_class($model),
