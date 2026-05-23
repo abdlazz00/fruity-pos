@@ -50,7 +50,7 @@ class PurchaseOrderController extends Controller
         return inertia('PurchaseOrder/Form', [
             'purchaseOrder'  => null,
             'suppliers'      => Supplier::where('is_active', true)->orderBy('name')->get(),
-            'products'       => Product::with('units')->where('is_active', true)->orderBy('name')->paginate(15),
+            'products'       => Product::with('units')->where('is_active', true)->orderBy('name')->get(),
             'locations'      => Location::where('is_active', true)->get(),
             'userLocationId' => $user->location_id,
         ]);
@@ -98,7 +98,7 @@ class PurchaseOrderController extends Controller
         return inertia('PurchaseOrder/Form', [
             'purchaseOrder'  => $po,
             'suppliers'      => Supplier::where('is_active', true)->orderBy('name')->get(),
-            'products'       => Product::with('units')->where('is_active', true)->orderBy('name')->paginate(15),
+            'products'       => Product::with('units')->where('is_active', true)->orderBy('name')->get(),
             'locations'      => Location::where('is_active', true)->get(),
             'userLocationId' => $user->location_id,
         ]);
