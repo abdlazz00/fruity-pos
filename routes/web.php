@@ -14,12 +14,66 @@ Route::get('/api/debug-cherry', function () {
     if (!$product) {
         return response()->json(['error' => 'Product CHR-USA-007 not found']);
     }
+
+    $inventories = \App\Models\Inventory::where('product_id', $product->id)->with('location')->get();
+    $pos = \App\Models\PurchaseOrder::whereHas('items', fn($q) => $q->where('product_id', $product->id))->with(['items.productUnit', 'location'])->get();
+    $inbounds = \App\Models\Inbound::whereHas('items', fn($q) => $q->where('product_id', $product->id))->with(['items.productUnit', 'location'])->get();
+    $logs = \App\Models\ActivityLog::where(function($q) use ($product) {
+        $q->where('model_type', get_class($product))->where('model_id', $product->id);
+    })->orWhere('action', 'like', '%inbound%')->latest()->get();
+
+    // Automated Diagnostic Analysis
+    $analysis = [];
+    $analysis['initial_seed_stock_expected'] = 100;
+    
+    $inboundItem = null;
+    $receivedQty = 0;
+    $conversionFactor = 1;
+    $calculatedBaseQty = 0;
+    
+    if ($inbounds->isNotEmpty()) {
+        $firstInbound = $inbounds->first();
+        $inboundItem = $firstInbound->items->first(fn($item) => $item->product_id == $product->id);
+        if ($inboundItem) {
+            $receivedQty = (float) $inboundItem->quantity_received;
+            $conversionFactor = (float) ($inboundItem->productUnit?->conversion_to_base ?? 1);
+            $calculatedBaseQty = $receivedQty * $conversionFactor;
+        }
+    }
+
+    $currentStock = $inventories->first(fn($inv) => $inv->location_id == 1)->quantity ?? 0;
+
+    $analysis['step_by_step'] = [
+        "1. Nilai 'base_uom' produk di tabel products: '{$product->base_uom}'",
+        "2. Unit yang diterima dalam inbound: '" . ($inboundItem->productUnit->unit_name ?? 'N/A') . "' (ID: " . ($inboundItem->product_unit_id ?? 'null') . ")",
+        "3. Faktor konversi unit ke base ('conversion_to_base') di DB: {$conversionFactor}",
+        "4. Kuantitas yang diterima ('quantity_received'): {$receivedQty}",
+        "5. Hasil perkalian qty * faktor konversi ('baseQty'): {$calculatedBaseQty}",
+        "6. Stok sebelum transaksi (di-seed awal): 100.00",
+        "7. Stok saat ini di gudang Toko Pusat Serpong (Location ID: 1): {$currentStock}"
+    ];
+
+    if ($calculatedBaseQty == 0) {
+        $analysis['conclusion'] = "MASALAH: Faktor konversi unit 'Kilogram' yang disimpan di database adalah 0 atau bernilai sangat kecil (atau tidak ter-load), sehingga perkalian quantity_received * conversion_to_base menghasilkan 0. Akibatnya, stok tidak bertambah sama sekali saat inbound dan tetap berada di angka 100.00 (stok awal dari seeder).";
+    } elseif ($currentStock == 100 && $calculatedBaseQty == 50) {
+        $analysis['conclusion'] = "MASALAH: Inbound berhasil mencatat penerimaan 50kg dengan faktor konversi 1, tetapi database di-seed ulang setelah transaksi dibuat ATAU event listener RecalculateWAC tidak dieksekusi secara benar (stok tetap 100 dari seeder).";
+    } elseif ($currentStock == 150) {
+        $analysis['conclusion'] = "ANALISIS: Stok sebenarnya sudah bertambah secara benar menjadi 150.00, tetapi layar yang kamu lihat mungkin belum direfresh atau melihat data lama/salah lokasi.";
+    } elseif ($currentStock == 100 && $calculatedBaseQty == 0) {
+        $analysis['conclusion'] = "MASALAH: conversion_to_base tidak ter-set dengan benar untuk unit yang dipilih, sehingga menambah 0 stock.";
+    } else {
+        $analysis['conclusion'] = "ANALISIS: Stok saat ini adalah {$currentStock}. Butuh penelusuran lebih lanjut berdasarkan log.";
+    }
+
     return response()->json([
         'product' => $product,
-        'inventories' => \App\Models\Inventory::where('product_id', $product->id)->with('location')->get(),
-        'pos' => \App\Models\PurchaseOrder::whereHas('items', fn($q) => $q->where('product_id', $product->id))->with(['items.productUnit', 'location'])->get(),
-        'inbounds' => \App\Models\Inbound::whereHas('items', fn($q) => $q->where('product_id', $product->id))->with(['items.productUnit', 'location'])->get(),
-    ]);
+        'inventories' => $inventories,
+        'product_units_all' => $product->units,
+        'purchase_orders' => $pos,
+        'inbounds' => $inbounds,
+        'diagnostic_analysis' => $analysis,
+        'activity_logs' => $logs
+    ], 200, [], JSON_PRETTY_PRINT);
 });
 
 Route::middleware('guest')->group(function () {
