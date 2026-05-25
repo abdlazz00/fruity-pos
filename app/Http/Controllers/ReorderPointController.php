@@ -59,25 +59,29 @@ class ReorderPointController extends Controller
         }
 
         // Get products with current stock at the selected location
+        // Performance fix: pre-load all inventories in one query instead of N+1
         $products = Product::where('is_active', true)
             ->with(['category'])
-            ->get()
-            ->map(function ($product) use ($locationId) {
-                $inventory = $locationId
-                    ? Inventory::where('product_id', $product->id)
-                        ->where('location_id', $locationId)
-                        ->first()
-                    : null;
+            ->get();
 
-                return [
-                    'id'           => $product->id,
-                    'name'         => $product->name,
-                    'sku'          => $product->sku,
-                    'base_uom'     => $product->base_uom,
-                    'category'     => $product->category->name ?? '-',
-                    'current_stock' => $inventory ? (float) $inventory->quantity : 0,
-                ];
-            });
+        $inventoryMap = $locationId
+            ? Inventory::where('location_id', $locationId)
+                ->whereIn('product_id', $products->pluck('id'))
+                ->get()
+                ->keyBy('product_id')
+            : collect();
+
+        $products = $products->map(function ($product) use ($inventoryMap) {
+            $inventory = $inventoryMap->get($product->id);
+            return [
+                'id'            => $product->id,
+                'name'          => $product->name,
+                'sku'           => $product->sku,
+                'base_uom'      => $product->base_uom,
+                'category'      => $product->category->name ?? '-',
+                'current_stock' => $inventory ? (float) $inventory->quantity : 0,
+            ];
+        });
 
         $locations = Location::where('is_active', true)->get();
 

@@ -97,24 +97,27 @@ class ReorderPointRepository implements ReorderPointRepositoryInterface
     /**
      * Get low stock alerts: active reorder points where current inventory < min_quantity.
      * Used by Dashboard (FR-1213) and ReorderPoint index page.
+     *
+     * Performance fix: single JOIN query instead of N+1 PHP loop.
      */
     public function getLowStockAlerts(?int $locationId)
     {
         $query = $this->model
-            ->where('is_active', true)
+            ->where('reorder_points.is_active', true)
+            ->join('inventories', function ($join) {
+                $join->on('inventories.product_id', '=', 'reorder_points.product_id')
+                     ->on('inventories.location_id', '=', 'reorder_points.location_id');
+            })
+            ->whereRaw('inventories.quantity < reorder_points.min_quantity')
             ->with(['product', 'location']);
 
         if ($locationId) {
-            $query->where('location_id', $locationId);
+            $query->where('reorder_points.location_id', $locationId);
         }
 
-        return $query->get()->filter(function ($rp) {
-            $inventory = Inventory::where('product_id', $rp->product_id)
-                ->where('location_id', $rp->location_id)
-                ->first();
-
-            $currentStock = $inventory ? (float) $inventory->quantity : 0;
-            return $currentStock < (float) $rp->min_quantity;
-        })->values();
+        return $query
+            ->select('reorder_points.*', 'inventories.quantity as current_stock')
+            ->get()
+            ->values();
     }
 }

@@ -60,8 +60,12 @@ class Transaction extends Model
     {
         $prefix = 'TRX-' . strtoupper($locationCode) . '-' . now()->format('Ymd');
 
+        // lockForUpdate() prevents race conditions when two cashiers
+        // checkout simultaneously and could generate the same number.
+        // This must be called within a DB::transaction() context.
         $last = self::where('transaction_number', 'like', $prefix . '-%')
             ->orderByRaw('CAST(SUBSTRING(transaction_number, ' . (strlen($prefix) + 2) . ') AS UNSIGNED) DESC')
+            ->lockForUpdate()
             ->first();
 
         $nextNumber = 1;

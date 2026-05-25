@@ -123,11 +123,12 @@ Route::middleware('auth')->group(function () {
 
     // Notifications API (all authenticated users)
     Route::get('/api/notifications', function (Illuminate\Http\Request $request) {
+        $notifications = $request->user()->notifications()->latest()->take(20)->get();
         return response()->json([
-            'notifications' => $request->user()->notifications()->latest()->take(20)->get(),
-            'unread_count'  => $request->user()->unreadNotifications()->count(),
+            'notifications' => $notifications,
+            'unread_count'  => $notifications->whereNull('read_at')->count(), // in-memory, no extra query
         ]);
-    })->name('notifications.index');
+    })->name('notifications.index')->middleware('throttle:60,1');
 
     // ── Shift Report (all roles, scoped by FR-907 in controller) ──
     Route::get('/reports/shifts', [\App\Http\Controllers\ReportController::class, 'shifts'])->name('reports.shifts');

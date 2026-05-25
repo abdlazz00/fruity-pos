@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\ReportService;
 use App\Models\Location;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
@@ -33,7 +34,9 @@ class ReportController extends Controller
 
     private function activeLocations()
     {
-        return Location::where('is_active', true)->get(['id', 'name', 'code']);
+        return Cache::remember('active_locations', 600, fn() =>
+            Location::where('is_active', true)->get(['id', 'name', 'code'])
+        );
     }
 
     // ─────────────────────────────────────────────
