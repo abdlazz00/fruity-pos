@@ -9,6 +9,19 @@ Route::get('/', function () {
     return redirect('/login');
 });
 
+Route::get('/api/debug-cherry', function () {
+    $product = \App\Models\Product::where('sku', 'CHR-USA-007')->with('units')->first();
+    if (!$product) {
+        return response()->json(['error' => 'Product CHR-USA-007 not found']);
+    }
+    return response()->json([
+        'product' => $product,
+        'inventories' => \App\Models\Inventory::where('product_id', $product->id)->with('location')->get(),
+        'pos' => \App\Models\PurchaseOrder::whereHas('items', fn($q) => $q->where('product_id', $product->id))->with(['items.productUnit', 'location'])->get(),
+        'inbounds' => \App\Models\Inbound::whereHas('items', fn($q) => $q->where('product_id', $product->id))->with(['items.productUnit', 'location'])->get(),
+    ]);
+});
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
