@@ -9,6 +9,8 @@ use App\Notifications\InboundReceivedNotification;
 
 class SendInboundNotification
 {
+    protected static $processedInboundIds = [];
+
     /**
      * Handle the InboundCreated event.
      *
@@ -16,6 +18,14 @@ class SendInboundNotification
      */
     public function handle(InboundCreated $event): void
     {
+        $inboundId = $event->inbound->id;
+
+        // Prevent duplicate execution in the same request thread
+        if (in_array($inboundId, self::$processedInboundIds)) {
+            return;
+        }
+        self::$processedInboundIds[] = $inboundId;
+
         $inbound = $event->inbound->load(['items.product', 'location']);
         $locationId = $inbound->location_id;
 

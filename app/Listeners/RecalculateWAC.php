@@ -8,6 +8,7 @@ use App\Repositories\Contracts\InventoryRepositoryInterface;
 class RecalculateWAC
 {
     protected $inventoryRepo;
+    protected static $processedInboundIds = [];
 
     public function __construct(InventoryRepositoryInterface $inventoryRepo)
     {
@@ -25,6 +26,14 @@ class RecalculateWAC
      */
     public function handle(InboundCreated $event): void
     {
+        $inboundId = $event->inbound->id;
+
+        // Prevent duplicate execution in the same request thread
+        if (in_array($inboundId, self::$processedInboundIds)) {
+            return;
+        }
+        self::$processedInboundIds[] = $inboundId;
+
         $inbound = $event->inbound->load('items.productUnit');
         $locationId = $inbound->location_id;
 
