@@ -53,11 +53,11 @@ class ProductRepository implements ProductRepositoryInterface
     {
         $product = $this->model->findOrFail($productId);
         
-        $newUnitNames = collect($unitsData)->pluck('name')->filter()->toArray();
+        $newUnitNames = collect($unitsData)->pluck('unit_name')->filter()->toArray();
 
         // Hapus unit lama yang tidak ada di request baru
         foreach ($product->units as $unit) {
-            if (!in_array($unit->name, $newUnitNames)) {
+            if (!in_array($unit->unit_name, $newUnitNames)) {
                 try {
                     $unit->delete();
                 } catch (\Exception $e) {
@@ -68,9 +68,9 @@ class ProductRepository implements ProductRepositoryInterface
 
         // Tambahkan atau perbarui unit
         foreach ($unitsData as $data) {
-            if (isset($data['name'])) {
+            if (isset($data['unit_name'])) {
                 $product->units()->updateOrCreate(
-                    ['name' => $data['name']],
+                    ['unit_name' => $data['unit_name']],
                     $data
                 );
             }
