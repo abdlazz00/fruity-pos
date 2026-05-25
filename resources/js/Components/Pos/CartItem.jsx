@@ -29,7 +29,7 @@ export default function CartItem({ item, updateQty, removeItem }) {
             <div className="flex justify-between items-start mb-2">
                 <div className="flex-1 pr-2">
                     <h4 className="text-sm font-semibold text-gray-900 line-clamp-2 leading-tight">{item.name}</h4>
-                    <div className="text-xs text-gray-500 mt-0.5">{formatRupiah(item.unit_price)} / unit</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{formatRupiah(item.unit_price)} / {item.base_uom || 'unit'}</div>
                 </div>
                 <div className="text-right shrink-0">
                     <div className="text-sm font-bold text-gray-900">{formatRupiah(item.subtotal)}</div>

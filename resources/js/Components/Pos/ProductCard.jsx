@@ -24,7 +24,7 @@ export default function ProductCard({ product, onClick }) {
             {/* Image Placeholder */}
             <div className="h-32 bg-gray-100 w-full flex items-center justify-center relative shrink-0">
                 {product.image_path ? (
-                    <img src={product.image_path} alt={product.name} className="w-full h-full object-cover" />
+                    <img src={`/storage/${product.image_path}`} alt={product.name} className="w-full h-full object-cover" />
                 ) : (
                     <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -41,7 +41,14 @@ export default function ProductCard({ product, onClick }) {
 
             <div className="p-3 flex-1 flex flex-col justify-between">
                 <div>
-                    <div className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{product.category}</div>
+                    <div className="flex justify-between items-center gap-2 mb-1">
+                        <span className="text-[10px] text-gray-500 uppercase tracking-wider line-clamp-1">{product.category}</span>
+                        {product.base_uom && (
+                            <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
+                                {product.base_uom}
+                            </span>
+                        )}
+                    </div>
                     <h3 className="text-sm font-semibold text-gray-900 leading-tight mb-2 line-clamp-2">{product.name}</h3>
                 </div>
                 

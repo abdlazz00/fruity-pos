@@ -119,7 +119,8 @@ export default function PosOffline({ shift, catalog: serverCatalog }) {
                     unit_price: product.selling_price, // Base price for qty 1
                     qty: 1,
                     subtotal: product.selling_price,
-                    stock: product.stock // Keep stock reference for validation
+                    stock: product.stock, // Keep stock reference for validation
+                    base_uom: product.base_uom
                 }];
             }
         });

@@ -92,7 +92,8 @@ export default function PosOnline({ shift, catalog }) {
                 unit_price: product.selling_price,
                 qty: 1,
                 subtotal: product.selling_price,
-                stock: product.stock
+                stock: product.stock,
+                base_uom: product.base_uom
             });
         }
 
@@ -305,18 +306,18 @@ export default function PosOnline({ shift, catalog }) {
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-10 h-10 bg-gray-100 rounded-md overflow-hidden shrink-0 flex items-center justify-center">
                                                                 {p.image_path ? (
-                                                                    <img src={p.image_path} className="w-full h-full object-cover" />
+                                                                    <img src={`/storage/${p.image_path}`} className="w-full h-full object-cover" />
                                                                 ) : (
                                                                     <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                                                 )}
                                                             </div>
                                                             <div>
                                                                 <p className="text-sm font-semibold text-gray-900 leading-none mb-1">{p.name}</p>
-                                                                <p className="text-xs text-gray-500">{p.sku} • Stok: {p.stock}</p>
+                                                                <p className="text-xs text-gray-500">{p.sku} • Stok: {p.stock} {p.base_uom || ''}</p>
                                                             </div>
                                                         </div>
                                                         <div className="text-sm font-bold text-secondary">
-                                                            {formatRupiah(p.selling_price)}
+                                                            {formatRupiah(p.selling_price)} / {p.base_uom || 'unit'}
                                                         </div>
                                                     </li>
                                                 ))}
@@ -357,7 +358,7 @@ export default function PosOnline({ shift, catalog }) {
                                                         <div className="font-semibold text-gray-900">{item.name}</div>
                                                     </td>
                                                     <td className="px-4 py-3 text-right text-gray-600">
-                                                        {formatRupiah(item.unit_price)}
+                                                        {formatRupiah(item.unit_price)} / {item.base_uom || 'unit'}
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         <input 

@@ -365,6 +365,7 @@ class TransactionService
                 'name'          => $price->product->name,
                 'sku'           => $price->product->sku,
                 'category'      => $price->product->category->name ?? '-',
+                'base_uom'      => $price->product->base_uom,
                 'image_path'    => $price->product->image_path,
                 'selling_price' => (float) $price->selling_price,
                 'stock'         => $stock,

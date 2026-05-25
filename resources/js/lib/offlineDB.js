@@ -28,6 +28,7 @@ export async function cacheCatalog(catalog) {
     name: item.name,
     sku: item.sku,
     category: item.category,
+    base_uom: item.base_uom,
     image_path: item.image_path,
     selling_price: item.selling_price,
     stock: item.stock,
