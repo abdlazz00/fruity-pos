@@ -1,4 +1,5 @@
 #!/bin/bash
+umask 022
 
 echo "========================================"
 echo "  FruityPOS - Starting Application"
@@ -26,7 +27,10 @@ echo "[start.sh] Running database migrations..."
 php artisan migrate --force
 
 # 5. Ensure storage link exists
-php artisan storage:link 2>/dev/null || true
+echo "[start.sh] Recreating storage symlink..."
+rm -rf /app/public/storage
+php artisan storage:link
+
 
 echo "[start.sh] Starting Supervisord (web + queue + nightwatch)..."
 
