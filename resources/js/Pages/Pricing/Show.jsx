@@ -89,7 +89,10 @@ export default function Show({ price, avgCostBreakdown }) {
     };
 
     const handleLock = () => {
-        router.patch(`/pricing/${price.id}/lock`, {}, {
+        router.patch(`/pricing/${price.id}/lock`, {
+            margin_percentage: margin,
+            rounding_to: rounding
+        }, {
             onSuccess: () => setLockModalOpen(false)
         });
     };

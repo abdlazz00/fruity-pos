@@ -126,9 +126,23 @@ class PricingController extends Controller
      */
     public function lock($id, Request $request)
     {
+        if ($request->has('margin_percentage')) {
+            $request->validate([
+                'margin_percentage' => 'required|numeric|min:0|max:999',
+                'rounding_to'       => 'nullable|integer|min:0',
+            ]);
+            
+            $price = $this->pricingService->findPrice($id);
+            $this->pricingService->setMargin(
+                $price->product_id,
+                $request->margin_percentage,
+                $request->rounding_to ?? 0
+            );
+        }
+
         $this->pricingService->lockPrice($id, $request->user()->id);
 
-        return back()->with('status', 'Harga produk berhasil di-lock. Produk sekarang tersedia di POS.');
+        return back()->with('status', 'Harga produk berhasil disimpan & di-lock. Produk sekarang tersedia di POS.');
     }
 
     /**
